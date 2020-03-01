@@ -1,57 +1,12 @@
 import 'dart:async';
-import 'dart:isolate';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
-import 'package:image/image.dart' as img;
 import 'package:flutter/material.dart';
 import 'package:math_experiments/work_funcs.dart';
 import 'package:tuple/tuple.dart';
-import 'dart:developer' as dev;
 import 'cartesian_isolate.dart';
 import 'isolate_wrapper.dart';
-
-@immutable
-class FunctionDef {
-  const FunctionDef({this.func, this.deriv, this.color, this.hash});
-  final MathFunc func;
-  final MathFunc deriv;
-  final Color color;
-  final int hash;
-
-  @override
-  int get hashCode => hash ?? super.hashCode;
-
-  @override
-  bool operator ==(other) {
-    if (other.runtimeType != runtimeType) return false;
-
-    if (hash != null && (other as FunctionDef).hash != null)
-      return hash == (other as FunctionDef).hash;
-
-    return super == (other);
-  }
-}
-
-typedef double MathFunc(double x);
-
-class CartesianPlane extends StatefulWidget {
-  const CartesianPlane(
-      {Rect coordinates,
-      this.currentX,
-      this.lineSize = 2,
-      this.aspectRatio,
-      this.defs})
-      : this.coordinates = coordinates ?? const Rect.fromLTRB(-1, 1, 1, -1);
-  final Rect coordinates;
-  final double currentX;
-  final double aspectRatio;
-  final int lineSize;
-  final List<FunctionDef> defs;
-
-  @override
-  _CartesianPlaneState createState() => _CartesianPlaneState();
-}
 
 @immutable
 class IntSize {
@@ -81,6 +36,49 @@ class IntSize {
   }
 }
 
+@immutable
+class FunctionDef {
+  const FunctionDef({this.func, this.deriv, this.color, this.hash});
+  final MathFunc func;
+  final MathFunc deriv;
+  final Color color;
+  final int hash;
+
+  @override
+  int get hashCode => hash ?? super.hashCode;
+
+  @override
+  bool operator ==(other) {
+    if (other.runtimeType != runtimeType) return false;
+
+    if (hash != null && (other as FunctionDef).hash != null) {
+      return hash == (other as FunctionDef).hash;
+    }
+
+    return super == (other);
+  }
+}
+
+typedef double MathFunc(double x);
+
+class CartesianPlane extends StatefulWidget {
+  const CartesianPlane(
+      {Rect coords,
+      this.currentX,
+      this.lineSize = 2,
+      this.aspectRatio,
+      this.defs})
+      : this.coords = coords ?? const Rect.fromLTRB(-1, 1, 1, -1);
+  final Rect coords;
+  final double currentX;
+  final double aspectRatio;
+  final int lineSize;
+  final List<FunctionDef> defs;
+
+  @override
+  _CartesianPlaneState createState() => _CartesianPlaneState();
+}
+
 class _CartesianPlaneState extends State<CartesianPlane> {
   Tuple2<List<FunctionDef>, IntSize> currentProcessing;
   Tuple3<ImageProvider, List<FunctionDef>, IntSize> currentImage;
@@ -98,13 +96,12 @@ class _CartesianPlaneState extends State<CartesianPlane> {
 
     final List<FunctionDef> defs = widget.defs;
     final IntSize size = currentSize;
-    final Rect coordinates = widget.coordinates;
+    final Rect coords = widget.coords;
     final int lineSize = widget.lineSize;
     // We will need to process the image now
     final Tuple2<List<FunctionDef>, IntSize> processing = Tuple2(defs, size);
     currentProcessing = processing;
-    final Uint8List bytes =
-        await getFutureImage(size, defs, coordinates, lineSize);
+    final Uint8List bytes = await getFutureImage(size, defs, coords, lineSize);
 
     // Exit if a new image was scheduled
     if (processing != currentProcessing) return print('Early return 0');
@@ -186,11 +183,11 @@ class _CartesianPlaneState extends State<CartesianPlane> {
     for (int i = 0; i < widget.defs.length; i++) {
       final MathFunc F = widget.defs[i].func;
       final Color c = widget.defs[i].color;
-      final double xPos = inverseLerp(widget.coordinates.left,
-              widget.coordinates.right, widget.currentX) *
+      final double xPos = inverseLerp(
+              widget.coords.left, widget.coords.right, widget.currentX) *
           s.width;
-      final double yPos = inverseLerp(widget.coordinates.top,
-              widget.coordinates.bottom, F(widget.currentX)) *
+      final double yPos = inverseLerp(
+              widget.coords.top, widget.coords.bottom, F(widget.currentX)) *
           s.height;
       yield Tuple3(
           Offset(xPos, yPos), Offset(widget.currentX, F(widget.currentX)), c);
@@ -203,16 +200,16 @@ class _CartesianPlaneState extends State<CartesianPlane> {
       final MathFunc D = widget.defs[i].deriv;
       if (D == null) continue;
       final Color c = widget.defs[i].color;
-      final double xPos = inverseLerp(widget.coordinates.left,
-              widget.coordinates.right, widget.currentX) *
+      final double xPos = inverseLerp(
+              widget.coords.left, widget.coords.right, widget.currentX) *
           s.width;
-      final double yPos = inverseLerp(widget.coordinates.top,
-              widget.coordinates.bottom, F(widget.currentX)) *
+      final double yPos = inverseLerp(
+              widget.coords.top, widget.coords.bottom, F(widget.currentX)) *
           s.height;
       // The derivative works for an 1:1 cartesian plane, which isn't the case always
       // We need to scale it accordingly
-      final double xSize = s.width / widget.coordinates.width.abs();
-      final double ySize = s.height / widget.coordinates.height.abs();
+      final double xSize = s.width / widget.coords.width.abs();
+      final double ySize = s.height / widget.coords.height.abs();
       final double d = D(widget.currentX);
       final double scaledD = d * (ySize / xSize);
       yield Tuple3(Offset(xPos, yPos), scaledD, c);
@@ -223,7 +220,7 @@ class _CartesianPlaneState extends State<CartesianPlane> {
   Widget build(BuildContext context) {
     return AspectRatio(
         aspectRatio: widget.aspectRatio ??
-            widget.coordinates.width.abs() / widget.coordinates.height.abs(),
+            widget.coords.width.abs() / widget.coords.height.abs(),
         child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
           currentSize = IntSize.ceil(constraints.biggest);

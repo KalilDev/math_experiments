@@ -2,10 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:math_experiments/constants_provider.dart';
 import 'package:provider/provider.dart';
-import 'work_funcs.dart';
-import 'cartesian_plane.dart';
 import 'spring_page.dart';
-import 'pendulum_page.dart';
 
 final Map<ThemeMode, IconData> modeIconMap = {
   ThemeMode.light: Icons.brightness_5,

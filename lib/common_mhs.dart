@@ -58,8 +58,7 @@ abstract class CommonMHSState extends State<CommonMHSWidget>
         AnimatedBuilder(
           animation: _controller,
           builder: (BuildContext c, _) => CartesianPlane(
-              coordinates:
-                  Rect.fromLTRB(0, consts.Em * 1.01, 2, -consts.Em * 0.01),
+              coords: Rect.fromLTRB(0, consts.Em * 1.01, 2, -consts.Em * 0.01),
               defs: defs,
               currentX: _controller.value,
               aspectRatio: 2,
@@ -72,48 +71,8 @@ abstract class CommonMHSState extends State<CommonMHSWidget>
         RaisedButton(
           onPressed: () => _controller.repeat(),
           child: Text('Resume'),
-        ),
-        RaisedButton(
-          onPressed: testFuncs,
-          child: Text('Test'),
         )
       ],
     );
   }
 }
-
-double staticFunc(double d) => 0.0;
-
-void testFuncs() {
-  MathFunc func = (double d) => 1.0;
-  final MathFunc finalFunc = (double d) => 2.0;
-  const MathFunc constFunc = staticFunc;
-  List<MathFunc> listStaticFunc = [staticFunc];
-  List<MathFunc> listFunc = [func];
-  List<MathFunc> listFinalFunc = [finalFunc];
-  List<MathFunc> listConstFunc = [constFunc];
-  final List<MathFunc> finalListStaticFunc = [staticFunc];
-  final List<MathFunc> finalListFunc = [func];
-  final List<MathFunc> finalListFinalFunc = [finalFunc];
-  final List<MathFunc> finalListConstFunc = [constFunc];
-  const List<MathFunc> constListStaticFunc = [staticFunc];
-  const List<MathFunc> constListConstFunc = [constFunc];
-  final Function f = func;
-  testFunc(staticFunc);
-  testFunc(func);
-  testFunc(finalFunc);
-  testFunc(constFunc);
-  testFuncList(listStaticFunc);
-  testFuncList(listFunc);
-  testFuncList(listFinalFunc);
-  testFuncList(listConstFunc);
-  testFuncList(finalListStaticFunc);
-  testFuncList(finalListFunc);
-  testFuncList(finalListFinalFunc);
-  testFuncList(finalListConstFunc);
-  testFuncList(constListStaticFunc);
-  testFuncList(constListConstFunc);
-}
-
-testFunc(MathFunc f) => print(f);
-testFuncList(List<MathFunc> l) => print(l.first);

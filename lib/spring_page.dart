@@ -112,13 +112,18 @@ class _SpringPageState extends CommonMHSState {
           func: (double x) => elasticEnergy(
               consts.K, distanceAtT(x, maxDistance(consts.Em, consts.K))),
           deriv: (double x) => sin(2 * pi * x) * -consts.Em * pi,
-          color: theme.forceColor),
+          color: theme.forceColor,
+          hash: this.runtimeType.hashCode + 1),
       FunctionDef(
           func: (double x) => kineticEnergy(
               consts.M, velAtT(x, maxVelocity(consts.Em, consts.M))),
-          //deriv: (double x) => sin(2 * pi * x) * consts.Em * pi,
-          color: theme.velocityColor),
-      FunctionDef(func: (double x) => consts.Em, color: theme.mechanicalColor),
+          deriv: (double x) => sin(2 * pi * x) * consts.Em * pi,
+          color: theme.velocityColor,
+          hash: this.runtimeType.hashCode + 2),
+      FunctionDef(
+          func: (double x) => consts.Em,
+          color: theme.mechanicalColor,
+          hash: this.runtimeType.hashCode + 3),
     ];
   }
 }
@@ -216,7 +221,9 @@ class SpringPainter extends CustomPainter {
       Path getVelPath(int p) {
         final Path path = Path();
         int parts = -1;
-        for (int i = 1; i <= p; i++) parts += i + 1;
+        for (int i = 1; i <= p; i++) {
+          parts += i + 1;
+        }
         final double yFrac = 1 / parts;
         final double xFrac = 1 / p;
         for (int i = p; i > 0; i--) {

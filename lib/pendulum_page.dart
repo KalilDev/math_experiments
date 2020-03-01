@@ -3,9 +3,7 @@ import 'package:math_experiments/common_mhs.dart';
 import 'package:math_experiments/pendulum_funcs.dart';
 
 import 'constants_provider.dart';
-import 'work_funcs.dart';
 import 'package:flutter/material.dart';
-import 'package:vector_math/vector_math_64.dart' show Matrix4, Vector3;
 import 'cartesian_plane.dart';
 
 class PendulumPage extends CommonMHSWidget {
