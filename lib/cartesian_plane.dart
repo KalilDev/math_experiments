@@ -8,6 +8,7 @@ import 'package:math_experiments/work_funcs.dart';
 import 'package:tuple/tuple.dart';
 import 'dart:developer' as dev;
 import 'cartesian_isolate.dart';
+import 'isolate_wrapper.dart';
 
 @immutable
 class FunctionDef {
@@ -133,31 +134,29 @@ class _CartesianPlaneState extends State<CartesianPlane> {
 
   Future<Uint8List> getFutureImage(IntSize sizePx) async {
     final timer = Stopwatch();
-    // First part of this whole process.
     timer.start();
-    // Flutter expects an RGBA image
     // We will make an List with all the x values as the idx and the y values and then we will add
     // those to the image.
-    // This is an flattened 2d array basically. Its more performant
-    // Second part
+    // This is an flattened 2d array basically. Its more performant than an
+    // array[sizePx.width] of arrays[defs.length].
     final List<Tuple2<int, Color>> values =
         List<Tuple2<int, Color>>(sizePx.width * widget.defs.length);
+
     for (int x = 0; x < sizePx.width; x++) {
-      final Iterable<Tuple2<int, Color>> yVals = getYs(
-          lerpDouble(widget.coordinates.left, widget.coordinates.right,
-              x / sizePx.width),
-          sizePx.height);
-      int i = 0;
-      for (Tuple2<int, Color> val in yVals) {
-        values[sizePx.width * i + x] = val;
-        i++;
+      final List<Tuple2<int, Color>> yVals = getYs(
+              lerpDouble(widget.coordinates.left, widget.coordinates.right,
+                  x / sizePx.width),
+              sizePx.height)
+          .toList();
+
+      for (int i = 0; i < yVals.length; i++) {
+        values[sizePx.width * i + x] = yVals[i];
       }
     }
     print('calcs took ${timer.elapsedMicroseconds}');
-    //print('Future algo calculated: ${timer.elapsedMicroseconds / 1000}');
-    // Third part.
     timer.reset();
     timer.start();
+    // Let there be an async gap. This will prevent dropped
     await Future.value(null);
     print('gap was ${timer.elapsedMicroseconds}');
     // Now we convert the tuples into proper pixel data
