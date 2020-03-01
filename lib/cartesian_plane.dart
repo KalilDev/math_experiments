@@ -83,19 +83,46 @@ class IntSize {
 class _CartesianPlaneState extends State<CartesianPlane> {
   Tuple2<List<FunctionDef>, IntSize> currentProcessing;
   Tuple3<ImageProvider, List<FunctionDef>, IntSize> currentImage;
-  
-  @override
-  void didUpdateWidget(CartesianPlane oldWidget) {
-    if (oldWidget.coordinates != widget.coordinates ||
-        oldWidget.aspectRatio != widget.aspectRatio ||
-        oldWidget.lineSize != widget.lineSize ||
-        oldWidget.defs != widget.defs) {
-      if (image != null) {
-        image.evict();
-        image = null;
-      }
+  IntSize currentSize;
+
+  Future<void> maybeUpdateImage() async {
+    // The wanted image is already being processed
+    if (currentProcessing != null &&
+        currentProcessing.item1 == widget.defs &&
+        currentProcessing.item2 == currentSize) return;
+    // The current image is already the wanted image
+    if (currentImage != null &&
+        currentImage.item2 == widget.defs &&
+        currentImage.item3 == currentSize) return;
+
+    final List<FunctionDef> defs = widget.defs;
+    final IntSize size = currentSize;
+    final Rect coordinates = widget.coordinates;
+    final int lineSize = widget.lineSize;
+    // We will need to process the image now
+    final Tuple2<List<FunctionDef>, IntSize> processing = Tuple2(defs, size);
+    currentProcessing = processing;
+    final Uint8List bytes =
+        await getFutureImage(size, defs, coordinates, lineSize);
+
+    // Exit if a new image was scheduled
+    if (processing != currentProcessing) return print('Early return 0');
+
+    final MemoryImage image = MemoryImage(bytes);
+    await precacheImage(image, context);
+
+    // Exit if a new image was scheduled
+    if (processing != currentProcessing) {
+      print('Early return 1');
+      return image.evict();
     }
-    super.didUpdateWidget(oldWidget);
+
+    // Finally we update the widget
+    setState(() {
+      print('Setting state: $processing');
+      currentProcessing = null;
+      currentImage = Tuple3(image, widget.defs, currentSize);
+    });
   }
 
   static Iterable<Tuple2<int, Color>> getYs(
@@ -198,8 +225,8 @@ class _CartesianPlaneState extends State<CartesianPlane> {
             widget.coordinates.width.abs() / widget.coordinates.height.abs(),
         child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
-          /*image ??= MemoryImage(getImage(IntSize.ceil(
-              constraints.biggest * MediaQuery.of(context).devicePixelRatio)));*/
+          currentSize = IntSize.ceil(constraints.biggest);
+          maybeUpdateImage();
           return Stack(
             children: <Widget>[
               if (widget.currentX != null)
@@ -213,19 +240,7 @@ class _CartesianPlaneState extends State<CartesianPlane> {
                     size: constraints.biggest,
                   ),
                 ),
-              FutureBuilder(
-                  future: getFutureImage(IntSize.ceil(constraints.biggest *
-                      MediaQuery.of(context).devicePixelRatio)),
-                  builder: (BuildContext c, AsyncSnapshot<Uint8List> img) {
-                    if (img.hasData) {
-                      image = MemoryImage(img.data);
-                      return Image(image: image);
-                    }
-                    return SizedBox();
-                  })
-              /*Image(
-                image: image,
-              ),*/
+              if (currentImage != null) Image(image: currentImage.item1)
             ],
           );
         }));
