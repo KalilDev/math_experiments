@@ -98,18 +98,19 @@ class _CartesianPlaneState extends State<CartesianPlane> {
     super.didUpdateWidget(oldWidget);
   }
 
-  Iterable<Tuple2<int, Color>> getYs(double x, int yPixels) sync* {
-    for (int i = 0; i < widget.defs.length; i++) {
-      final Color color = widget.defs[i].color ?? Colors.black;
-      final MathFunc f = widget.defs[i].func;
-      final double y =
-          inverseLerp(widget.coordinates.top, widget.coordinates.bottom, f(x));
+  static Iterable<Tuple2<int, Color>> getYs(
+      double x, int yPixels, List<FunctionDef> defs, Rect coordinates) sync* {
+    for (int i = 0; i < defs.length; i++) {
+      final Color color = defs[i].color ?? Colors.black;
+      final MathFunc f = defs[i].func;
+      final double y = inverseLerp(coordinates.top, coordinates.bottom, f(x));
       final int yPixel = (y * yPixels).round();
       yield Tuple2<int, Color>(yPixel, color);
     }
   }
 
-  Future<Uint8List> getFutureImage(IntSize sizePx) async {
+  static Future<Uint8List> getFutureImage(IntSize sizePx,
+      List<FunctionDef> defs, Rect coordinates, int lineSize) async {
     final timer = Stopwatch();
     timer.start();
     // We will make an List with all the x values as the idx and the y values and then we will add
@@ -117,13 +118,14 @@ class _CartesianPlaneState extends State<CartesianPlane> {
     // This is an flattened 2d array basically. Its more performant than an
     // array[sizePx.width] of arrays[defs.length].
     final List<Tuple2<int, Color>> values =
-        List<Tuple2<int, Color>>(sizePx.width * widget.defs.length);
+        List<Tuple2<int, Color>>(sizePx.width * defs.length);
 
     for (int x = 0; x < sizePx.width; x++) {
       final List<Tuple2<int, Color>> yVals = getYs(
-              lerpDouble(widget.coordinates.left, widget.coordinates.right,
-                  x / sizePx.width),
-              sizePx.height)
+              lerpDouble(coordinates.left, coordinates.right, x / sizePx.width),
+              sizePx.height,
+              defs,
+              coordinates)
           .toList();
 
       for (int i = 0; i < yVals.length; i++) {
@@ -145,7 +147,7 @@ class _CartesianPlaneState extends State<CartesianPlane> {
                 values: values,
                 width: sizePx.width,
                 height: sizePx.height,
-                lineSize: widget.lineSize))
+                lineSize: lineSize))
         .catchError((e) => print(e));
     print('computational gap was ${timer.elapsedMicroseconds}');
     // Flutter does not let me instantiate an image from raw channel data smh
