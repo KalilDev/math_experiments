@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:isolate';
 import 'dart:typed_data';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:flutter/material.dart';
 import 'package:math_experiments/work_funcs.dart';
@@ -88,11 +89,11 @@ class _CartesianPlaneState extends State<CartesianPlane> {
   Future<void> maybeUpdateImage() async {
     // The wanted image is already being processed
     if (currentProcessing != null &&
-        currentProcessing.item1 == widget.defs &&
+        listEquals<FunctionDef>(currentProcessing.item1, widget.defs) &&
         currentProcessing.item2 == currentSize) return;
     // The current image is already the wanted image
     if (currentImage != null &&
-        currentImage.item2 == widget.defs &&
+        listEquals<FunctionDef>(currentImage.item2, widget.defs) &&
         currentImage.item3 == currentSize) return;
 
     final List<FunctionDef> defs = widget.defs;
