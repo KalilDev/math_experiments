@@ -18,14 +18,15 @@ abstract class CommonMHSState extends State<CommonMHSWidget>
   void startController(double period, double simSpeed) {
     assert(period != null);
     if (period == this.period && simSpeed == this.simSpeed) return;
+    final double t = _controller?.value ?? 0;
     if (_controller != null) _controller.dispose();
     _controller = AnimationController(
         vsync: this,
         duration:
             Duration(milliseconds: (period * (1 / simSpeed) * 1000).floor()),
         upperBound: 2.0);
-    _controller.value = 0.0;
-    //_controller.repeat();
+    _controller.value = t;
+    _controller.repeat();
     this.period = period;
   }
 
