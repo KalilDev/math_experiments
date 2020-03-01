@@ -24,26 +24,26 @@ class Home extends StatelessWidget {
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(20.0))),
         builder: (BuildContext c) {
-          final ConstantsProvider p = Provider.of<ConstantsProvider>(c);
+          final consts = Provider.of<ConstantsProvider>(c);
           return ListView(children: [
             ListTile(
               title: Text(
                   'Spring constant: ${Provider.of<ConstantsProvider>(c).K}N/m'),
               subtitle: Slider(
-                value: p.K,
-                onChanged: (d) => p.K = d,
+                value: consts.K,
+                onChanged: (d) => consts.K = d,
                 max: 500,
                 min: 0,
                 divisions: 50,
-                label: p.K.toString(),
+                label: consts.K.toString(),
               ),
               leading: IconButton(
                 icon: Icon(Icons.keyboard_arrow_down),
-                onPressed: p.decK,
+                onPressed: consts.decK,
               ),
               trailing: IconButton(
                 icon: Icon(Icons.keyboard_arrow_up),
-                onPressed: p.incK,
+                onPressed: consts.incK,
               ),
             ),
             ListTile(
@@ -51,20 +51,20 @@ class Home extends StatelessWidget {
                   builder: (BuildContext c) => Text(
                       'Mechanical energy: ${Provider.of<ConstantsProvider>(c).Em}J')),
               subtitle: Slider(
-                value: p.Em,
-                onChanged: (d) => p.Em = d,
+                value: consts.Em,
+                onChanged: (d) => consts.Em = d,
                 max: 500,
                 min: 0,
                 divisions: 50,
-                label: p.Em.toString(),
+                label: consts.Em.toString(),
               ),
               leading: IconButton(
                 icon: Icon(Icons.keyboard_arrow_down),
-                onPressed: p.decEm,
+                onPressed: consts.decEm,
               ),
               trailing: IconButton(
                 icon: Icon(Icons.keyboard_arrow_up),
-                onPressed: p.incEm,
+                onPressed: consts.incEm,
               ),
             ),
             ListTile(
@@ -72,49 +72,49 @@ class Home extends StatelessWidget {
                   builder: (BuildContext c) =>
                       Text('Mass: ${Provider.of<ConstantsProvider>(c).M}Kg')),
               subtitle: Slider(
-                value: p.M,
-                onChanged: (d) => p.M = d,
+                value: consts.M,
+                onChanged: (d) => consts.M = d,
                 max: 500,
                 min: 0,
                 divisions: 50,
-                label: p.M.toString(),
+                label: consts.M.toString(),
               ),
               leading: IconButton(
                 icon: Icon(Icons.keyboard_arrow_down),
-                onPressed: p.decM,
+                onPressed: consts.decM,
               ),
               trailing: IconButton(
                 icon: Icon(Icons.keyboard_arrow_up),
-                onPressed: p.incM,
+                onPressed: consts.incM,
               ),
             ),
             ListTile(
-              title: Text('Simulation speed: ${p.speed}'),
+              title: Text('Simulation speed: ${consts.speed}'),
               subtitle: Slider(
-                value: p.speed,
-                onChanged: (d) => p.speed = d,
+                value: consts.speed,
+                onChanged: (d) => consts.speed = d,
                 max: 5,
                 min: 0,
-                label: p.speed.toString(),
+                label: consts.speed.toString(),
               ),
               leading: IconButton(
                 icon: Icon(Icons.keyboard_arrow_down),
-                onPressed: p.decS,
+                onPressed: consts.decS,
               ),
               trailing: IconButton(
                 icon: Icon(Icons.keyboard_arrow_up),
-                onPressed: p.incS,
+                onPressed: consts.incS,
               ),
             ),
             ListTile(
               title: Text('Theme'),
               subtitle: ToggleButtons(
-                  onPressed: (int i) => p.theme = ThemeMode.values[i],
+                  onPressed: (int i) => consts.theme = ThemeMode.values[i],
                   children: ThemeMode.values
                       .map((ThemeMode t) => Icon(modeIconMap[t]))
                       .toList(),
                   isSelected: ThemeMode.values
-                      .map((ThemeMode t) => t == p.theme)
+                      .map((ThemeMode t) => t == consts.theme)
                       .toList()),
             )
           ]);
@@ -130,7 +130,7 @@ class Home extends StatelessWidget {
         length: 1, //2,
         child: Scaffold(
           appBar: AppBar(
-            title: Text("Movimento Harmônico Simples"),
+            title: Text('Movimento Harmônico Simples'),
             actions: <Widget>[
               Builder(
                   builder: (BuildContext context) => IconButton(
@@ -139,7 +139,7 @@ class Home extends StatelessWidget {
             ],
             bottom: TabBar(tabs: [
               Tab(
-                text: "Mola",
+                text: 'Mola',
               ),
               /*Tab(
                 text: "Pêndulo: TODO",

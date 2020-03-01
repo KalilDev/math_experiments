@@ -9,15 +9,15 @@ import 'dart:isolate';
 // the Result type, which will be used to complete the future, freeing the
 // resources afterwards.
 Future<Result> runOnIsolate<Result, Message>(
-    void F(SendPort s), Message msg) async {
+    void Function(SendPort s) F, Message msg) async {
   // Setup communication with isolate
-  final ReceivePort mainStream = ReceivePort();
-  final ReceivePort errorStream = ReceivePort();
-  final ReceivePort exitStream = ReceivePort();
+  final mainStream = ReceivePort();
+  final errorStream = ReceivePort();
+  final exitStream = ReceivePort();
   // Start isolate with F. Sidenote: F needs to be static and send the isolate's
   // sendPort through the main sink. We cannot wrap F because dart isolates can't
   // receive functions (even static ones), so the user MUSTN't fuck this up.
-  final Isolate isolate = await Isolate.spawn<SendPort>(F, mainStream.sendPort,
+  final isolate = await Isolate.spawn<SendPort>(F, mainStream.sendPort,
       onError: errorStream.sendPort, onExit: exitStream.sendPort);
 
   void dispose() {
@@ -27,7 +27,7 @@ Future<Result> runOnIsolate<Result, Message>(
     exitStream.close();
   }
 
-  final Completer<Result> completer = Completer<Result>();
+  final completer = Completer<Result>();
 
   mainStream.listen((data) {
     if (data is SendPort) {
@@ -38,7 +38,7 @@ Future<Result> runOnIsolate<Result, Message>(
       // This is the actual calculation returned from the isolate, it should be
       // of the return type.
       try {
-        final Result result = data as Result;
+        final result = data as Result;
         completer.complete(result);
       } on CastError catch (e, s) {
         // The stack trace has no relevant info in this case.

@@ -50,30 +50,30 @@ class _SpringPageState extends CommonMHSState {
   @override
   Widget buildRepresentation(ConstantsProvider consts, Brightness b, double t) {
     double getSpringFFraction() {
-      final double xMax = maxDistance(consts.Em, consts.K);
-      final double fMax = xMax * consts.K;
-      final double force = distanceAtT(t, xMax) * consts.K;
+      final xMax = maxDistance(consts.Em, consts.K);
+      final fMax = xMax * consts.K;
+      final force = distanceAtT(t, xMax) * consts.K;
       return force / fMax;
     }
 
     double getSpringVFraction() {
-      final double vMax = maxVelocity(consts.Em, consts.M);
-      final double velocity = velAtT(t, vMax);
+      final vMax = maxVelocity(consts.Em, consts.M);
+      final velocity = velAtT(t, vMax);
       return velocity / vMax;
     }
 
     double getSpringXFraction() {
-      final double xMax = maxDistance(consts.Em, consts.K);
-      final double distance = distanceAtT(t, xMax);
+      final xMax = maxDistance(consts.Em, consts.K);
+      final distance = distanceAtT(t, xMax);
       return distance / xMax;
     }
 
     int getSpringPieces() {
-      final double frac = consts.K / 4;
+      final frac = consts.K / 4;
       return (log(frac * frac * frac + 1) + 1).round();
     }
 
-    final SpringTheme theme =
+    final theme =
         b == Brightness.light ? SpringTheme.light() : SpringTheme.dark();
 
     return SizedBox(
@@ -89,8 +89,8 @@ class _SpringPageState extends CommonMHSState {
                 position:
                     'S: ${distanceAtT(t, maxDistance(consts.Em, consts.K)).toStringAsFixed(2)}m',
                 velocity:
-                    'V: ${velAtT(t, maxVelocity(consts.Em, consts.M)).toStringAsFixed(2)}m/s\n' +
-                        'p: ${kineticEnergyDerivative(consts.M, velAtT(t, maxVelocity(consts.Em, consts.M))).toStringAsFixed(2)}KgM/s',
+                    'V: ${velAtT(t, maxVelocity(consts.Em, consts.M)).toStringAsFixed(2)}m/s\n'
+                    'p: ${kineticEnergyDerivative(consts.M, velAtT(t, maxVelocity(consts.Em, consts.M))).toStringAsFixed(2)}KgM/s',
                 force:
                     'Fe: ${elasticEnergyDerivative(consts.K, distanceAtT(t, maxDistance(consts.Em, consts.K))).toStringAsFixed(2)}N',
                 box: 'M: ${consts.M.toStringAsFixed(2)}Kg')),
@@ -105,7 +105,7 @@ class _SpringPageState extends CommonMHSState {
 
   @override
   void updateFunctions(ConstantsProvider consts, Brightness b) {
-    final SpringTheme theme =
+    final theme =
         b == Brightness.light ? SpringTheme.light() : SpringTheme.dark();
     defs = [
       FunctionDef(
@@ -113,17 +113,17 @@ class _SpringPageState extends CommonMHSState {
               consts.K, distanceAtT(x, maxDistance(consts.Em, consts.K))),
           deriv: (double x) => sin(2 * pi * x) * -consts.Em * pi,
           color: theme.forceColor,
-          hash: this.runtimeType.hashCode + 1),
+          hash: runtimeType.hashCode + 1),
       FunctionDef(
           func: (double x) => kineticEnergy(
               consts.M, velAtT(x, maxVelocity(consts.Em, consts.M))),
           deriv: (double x) => sin(2 * pi * x) * consts.Em * pi,
           color: theme.velocityColor,
-          hash: this.runtimeType.hashCode + 2),
+          hash: runtimeType.hashCode + 2),
       FunctionDef(
           func: (double x) => consts.Em,
           color: theme.mechanicalColor,
-          hash: this.runtimeType.hashCode + 3),
+          hash: runtimeType.hashCode + 3),
     ];
   }
 }
@@ -165,24 +165,24 @@ class SpringPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final double xAxisSize = size.width - (2 * padding + boxSize);
+    final xAxisSize = size.width - (2 * padding + boxSize);
     // Fraction of the xSize
-    final double springSize = padding + inverseLerp(-1, 1, x) * xAxisSize;
-    final double yMid = size.height / 2;
+    final springSize = padding + inverseLerp(-1, 1, x) * xAxisSize;
+    final yMid = size.height / 2;
 
     Matrix4 getVectorMatrix(double t,
         {bool onBox = true, bool center = false}) {
-      final double scale = boxSize * 0.8;
-      final double offset = t > 0 && onBox ? springSize + boxSize : springSize;
-      final double yOffset = center ? ((boxSize - scale) / 2) / scale : 0.0;
-      final Matrix4 matrix = Matrix4.identity() * scale;
+      final scale = boxSize * 0.8;
+      final offset = t > 0 && onBox ? springSize + boxSize : springSize;
+      final yOffset = center ? ((boxSize - scale) / 2) / scale : 0.0;
+      final matrix = Matrix4.identity() * scale;
       matrix..translate(offset / scale, yOffset);
       return matrix * Matrix4.diagonal3(Vector3(2.0 * t, 1, 1));
     }
 
     void drawForce() {
-      final Paint forcePaint = Paint()..color = theme.forceColor;
-      final Path forcePath = Path()
+      final forcePaint = Paint()..color = theme.forceColor;
+      final forcePath = Path()
         ..moveTo(0, 0.25)
         ..lineTo(0.5, 0.25)
         ..lineTo(0.5, 0)
@@ -193,42 +193,43 @@ class SpringPainter extends CustomPainter {
         ..lineTo(0, 0.25)
         ..close();
 
-      final Matrix4 matrix =
-          getVectorMatrix(-force, onBox: false, center: true);
+      final matrix = getVectorMatrix(-force, onBox: false, center: true);
 
       canvas.drawPath(forcePath.transform(matrix.storage), forcePaint);
       if (texts?.force != null) {
         final Vector3 topLeft = matrix * Vector3.zero();
         final Vector3 bottomRight = matrix * Vector3(1, 1, 0);
-        final Vector3 textSize = bottomRight - topLeft;
-        final TextSpan span = TextSpan(
+        final textSize = bottomRight - topLeft;
+
+        final span = TextSpan(
             text: texts.force, style: TextStyle(color: theme.textColor));
-        final TextPainter painter = TextPainter(
+        final tp = TextPainter(
             text: span,
             textAlign: TextAlign.center,
             textDirection: TextDirection.ltr);
-        painter.layout(minWidth: textSize.x.abs(), maxWidth: textSize.x.abs());
-        if (painter.height > textSize.y) return;
-        painter.paint(
+
+        tp.layout(minWidth: textSize.x.abs(), maxWidth: textSize.x.abs());
+        if (tp.height > textSize.y) return;
+        tp.paint(
             canvas,
             Offset(min(topLeft.x, bottomRight.x),
-                topLeft.y + (textSize.y - painter.height) / 2));
+                topLeft.y + (textSize.y - tp.height) / 2));
       }
     }
 
     void drawVelocity() {
-      final Paint velPaint = Paint()..color = theme.velocityColor;
+      final velPaint = Paint()..color = theme.velocityColor;
       Path getVelPath(int p) {
-        final Path path = Path();
-        int parts = -1;
-        for (int i = 1; i <= p; i++) {
+        final path = Path();
+        var parts = -1;
+        for (var i = 1; i <= p; i++) {
           parts += i + 1;
         }
-        final double yFrac = 1 / parts;
-        final double xFrac = 1 / p;
-        for (int i = p; i > 0; i--) {
-          final double yStart = 1 - parts * yFrac;
-          final double yEnd = yStart + i * yFrac;
+        final yFrac = 1 / parts;
+        final xFrac = 1 / p;
+        for (var i = p; i > 0; i--) {
+          final yStart = 1 - parts * yFrac;
+          final yEnd = yStart + i * yFrac;
           path
             ..moveTo(0, yStart)
             ..lineTo(xFrac * i, yStart)
@@ -239,89 +240,93 @@ class SpringPainter extends CustomPainter {
         return path..close();
       }
 
-      final Matrix4 matrix = getVectorMatrix(-vel);
+      final matrix = getVectorMatrix(-vel);
 
       canvas.drawPath(getVelPath(3).transform(matrix.storage), velPaint);
 
       if (texts?.velocity != null) {
         final Vector3 topLeft = matrix * Vector3.zero();
         final Vector3 bottomRight = matrix * Vector3(1, 1, 0);
-        final Vector3 textSize = bottomRight - topLeft;
-        final TextSpan span = TextSpan(
+        final textSize = bottomRight - topLeft;
+
+        final span = TextSpan(
             text: texts.velocity, style: TextStyle(color: theme.textColor));
-        final TextPainter painter = TextPainter(
+        final tp = TextPainter(
             text: span,
             textAlign: textSize.x.isNegative ? TextAlign.right : TextAlign.left,
             textDirection: TextDirection.ltr);
-        painter.layout();
-        if (painter.height > textSize.y) return;
-        final Offset offset = Offset(
-            min(topLeft.x, bottomRight.x + textSize.x.abs() - painter.width),
+
+        tp.layout();
+        if (tp.height > textSize.y) return;
+        final start = Offset(
+            min(topLeft.x, bottomRight.x + textSize.x.abs() - tp.width),
             topLeft.y);
         canvas.drawRect(
-            Rect.fromLTWH(offset.dx, offset.dy, painter.width, painter.height),
-            velPaint);
-        painter.paint(canvas, offset);
+            Rect.fromLTWH(start.dx, start.dy, tp.width, tp.height), velPaint);
+        tp.paint(canvas, start);
       }
     }
 
     void drawBox() {
-      final Paint paint = Paint()..color = theme.boxColor;
+      final paint = Paint()..color = theme.boxColor;
       canvas.drawRect(
           Rect.fromLTRB(springSize, 0, springSize + boxSize, boxSize), paint);
       if (texts?.box != null) {
-        final TextSpan span =
+        final span =
             TextSpan(text: texts.box, style: TextStyle(color: theme.textColor));
-        final TextPainter painter = TextPainter(
+        final tp = TextPainter(
             text: span,
             textAlign: TextAlign.center,
             textDirection: TextDirection.ltr);
-        painter.layout(minWidth: boxSize, maxWidth: boxSize);
-        if (painter.height > boxSize) return;
-        painter.paint(canvas, Offset(springSize, size.height - painter.height));
+
+        tp.layout(minWidth: boxSize, maxWidth: boxSize);
+        if (tp.height > boxSize) return;
+        tp.paint(canvas, Offset(springSize, size.height - tp.height));
       }
     }
 
     void drawSpring() {
-      final Path spring = Path()..moveTo(0, yMid);
-      final Paint paint = Paint()
+      final path = Path()..moveTo(0, yMid);
+      final paint = Paint()
         ..color = theme.springColor
         ..strokeWidth = 3.0
         ..style = PaintingStyle.stroke;
-      for (int i = 0; i <= springPieces; i++) {
-        final double pieceFrac = i / springPieces;
-        final double halfwayFrac = 0.5 / springPieces;
-        spring.quadraticBezierTo((pieceFrac - halfwayFrac) * springSize,
+      for (var i = 0; i <= springPieces; i++) {
+        final pieceFrac = i / springPieces;
+        final halfwayFrac = 0.5 / springPieces;
+        path.quadraticBezierTo((pieceFrac - halfwayFrac) * springSize,
             i.isEven ? 0 : size.height, pieceFrac * springSize, yMid);
       }
-      spring
+      path
         ..moveTo(0, yMid)
         ..close();
-      canvas.drawPath(spring, paint);
+      canvas.drawPath(path, paint);
       if (texts?.spring != null) {
-        final TextSpan span = TextSpan(
+        final span = TextSpan(
             text: texts.spring,
             style: TextStyle(color: theme.backgroundTextColor));
-        final TextPainter painter = TextPainter(
+        final tp = TextPainter(
             text: span,
             textAlign: TextAlign.left,
             textDirection: TextDirection.ltr);
-        painter.layout();
-        painter.paint(canvas, Offset.zero);
+
+        tp.layout();
+        tp.paint(canvas, Offset.zero);
       }
     }
 
     void drawRuler() {
       if (texts?.position != null) {
-        final TextSpan span = TextSpan(
+        final span = TextSpan(
             text: texts.position,
             style: TextStyle(color: theme.backgroundTextColor));
-        final TextPainter painter = TextPainter(
+        final tp = TextPainter(
             text: span,
             textAlign: TextAlign.center,
             textDirection: TextDirection.ltr);
-        painter.layout(minWidth: springSize, maxWidth: springSize);
-        painter.paint(canvas, Offset(0, size.height - painter.height));
+
+        tp.layout(minWidth: springSize, maxWidth: springSize);
+        tp.paint(canvas, Offset(0, size.height - tp.height));
       }
     }
 

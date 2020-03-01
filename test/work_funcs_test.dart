@@ -17,8 +17,8 @@ class DoubleMatcher extends Matcher {
   @override
   bool matches(item, Map matchState) {
     if (item is double) {
-      final double diff = (n - item).abs();
-      final bool didMatch = diff <= _kErrorMargin;
+      final diff = (n - item).abs();
+      final didMatch = diff <= _kErrorMargin;
       return didMatch;
     }
     return false;
@@ -27,8 +27,8 @@ class DoubleMatcher extends Matcher {
 
 void main() {
   double kineticAndElastic(double constant, double variable) {
-    final double kinetic = kineticEnergy(constant, variable);
-    final double elastic = elasticEnergy(constant, variable);
+    final kinetic = kineticEnergy(constant, variable);
+    final elastic = elasticEnergy(constant, variable);
     expect(kinetic, elastic);
     return kinetic;
   }
@@ -54,11 +54,11 @@ void main() {
     //
 
     // 100N/m
-    const double K = 100;
+    const K = 100.0;
     // 200J
-    const double Em = 200.0;
+    const Em = 200.0;
     // 1kg
-    const double M = 1.0;
+    const M = 1.0;
     // So, there are 3 states:
     // A: Totally compressed to the left
     // B: At the center moving right at max speed
@@ -111,8 +111,8 @@ void main() {
     //  P = 20.0
 
     // These are constant across all states
-    final double kMaxVel = maxVelocity(Em, M);
-    final double kMaxDist = maxDistance(Em, K);
+    final kMaxVel = maxVelocity(Em, M);
+    final kMaxDist = maxDistance(Em, K);
     // Validate values
     expect(kMaxVel, 20);
     expect(kMaxDist, 2);
@@ -152,8 +152,8 @@ void main() {
     expectAtT(t: 2.0, V: 0, D: -2, We: 200, Wk: 0, Fe: 200, P: 0);
 
     // Asserting that both are equal at theta = pi/4 rad
-    final double displacement = (sqrt2 / 2) * kMaxDist;
-    final double velocity = (sqrt2 / 2) * kMaxVel;
+    final displacement = (sqrt2 / 2) * kMaxDist;
+    final velocity = (sqrt2 / 2) * kMaxVel;
     expect(elasticEnergy(K, displacement), DoubleMatcher(100));
     expect(kineticEnergy(M, velocity), DoubleMatcher(100));
   });

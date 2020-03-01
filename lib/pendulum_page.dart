@@ -38,8 +38,7 @@ class _PendulumPageState extends CommonMHSState {
 
   @override
   void updateFunctions(ConstantsProvider consts, Brightness b) {
-    final double theta0 =
-        getInitialTheta(consts.Em, consts.g, consts.M, consts.l);
+    final theta0 = getInitialTheta(consts.Em, consts.g, consts.M, consts.l);
     defs = [
       FunctionDef(
           func: (double x) => gravitationalEnergy(consts.M, consts.g,
@@ -76,14 +75,14 @@ class PendulumPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     void drawPendulum() {
-      final double l = size.width / 2;
-      final Offset center = size.center(Offset.zero);
-      final Offset point = Offset(sin(theta) * l + l, cos(theta) * l + l);
+      final l = size.width / 2;
+      final center = size.center(Offset.zero);
+      final point = Offset(sin(theta) * l + l, cos(theta) * l + l);
 
-      final Paint linePaint = Paint()..color = Colors.black;
+      final linePaint = Paint()..color = Colors.black;
       canvas.drawLine(center, point, linePaint);
 
-      final Paint pointPaint = Paint()..color = Colors.blue;
+      final pointPaint = Paint()..color = Colors.blue;
       canvas.drawCircle(point, 4.0, pointPaint);
     }
 

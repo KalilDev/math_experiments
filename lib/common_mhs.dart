@@ -18,7 +18,7 @@ abstract class CommonMHSState extends State<CommonMHSWidget>
   void startController(double period, double simSpeed) {
     assert(period != null);
     if (period == this.period && simSpeed == this.simSpeed) return;
-    final double t = _controller?.value ?? 0;
+    final t = _controller?.value ?? 0;
     if (_controller != null) _controller.dispose();
     _controller = AnimationController(
         vsync: this,
@@ -42,13 +42,13 @@ abstract class CommonMHSState extends State<CommonMHSWidget>
 
   @override
   Widget build(BuildContext context) {
-    final ConstantsProvider consts = Provider.of<ConstantsProvider>(context);
+    final consts = Provider.of<ConstantsProvider>(context);
     startController(getPeriod(consts), consts.speed);
     updateFunctions(consts, Theme.of(context).brightness);
     return ListView(
       children: <Widget>[
         Text(
-          "Period is ${getPeriod(consts).toStringAsFixed(2)}s",
+          'Period is ${getPeriod(consts).toStringAsFixed(2)}s',
           textAlign: TextAlign.center,
         ),
         AnimatedBuilder(

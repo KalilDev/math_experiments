@@ -15,18 +15,18 @@ class PixelDataMessage {
 }
 
 Uint8List processImage(PixelDataMessage data) {
-  final Uint8List bytes = Uint8List.fromList(
+  final bytes = Uint8List.fromList(
       List<int>.filled(4 * data.width * data.height, 0x00, growable: false));
-  final int singlePxAlpha = (255 * 1 / data.lineSize).floor();
-  for (int i = 0; i < data.values.length; i++) {
-    final int x = i % data.width;
-    final int y = data.values[i].item1;
-    final Color c = data.values[i].item2;
-    for (int j = 0; j <= data.lineSize; j++) {
-      final int yOffset = j.isEven ? -(j / 2).ceil() : (j / 2).ceil();
-      final int ny = yOffset + y;
-      if (ny >= data.height || ny < 0) continue;
-      final int byteIdx = (ny * data.width + x) * 4;
+  final singlePxAlpha = (255 * 1 / data.lineSize).floor();
+  for (var i = 0; i < data.values.length; i++) {
+    final x = i % data.width;
+    final y = data.values[i].item1;
+    final c = data.values[i].item2;
+    for (var j = 0; j <= data.lineSize; j++) {
+      final yOffset = j.isEven ? -(j / 2).ceil() : (j / 2).ceil();
+      final py = yOffset + y;
+      if (py >= data.height || py < 0) continue;
+      final byteIdx = (py * data.width + x) * 4;
       bytes[byteIdx] = c.red;
       bytes[byteIdx + 1] = c.green;
       bytes[byteIdx + 2] = c.blue;
@@ -39,7 +39,7 @@ Uint8List processImage(PixelDataMessage data) {
 }
 
 void wrappedProcessImage(SendPort mainSink) {
-  final ReceivePort isolateStream = ReceivePort();
+  final isolateStream = ReceivePort();
   mainSink.send(isolateStream.sendPort);
 
   isolateStream.listen((dynamic message) {

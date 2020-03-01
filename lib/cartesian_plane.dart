@@ -11,8 +11,8 @@ import 'isolate_wrapper.dart';
 @immutable
 class IntSize {
   const IntSize(int width, int height)
-      : this.width = width ?? 0,
-        this.height = height ?? 0;
+      : width = width ?? 0,
+        height = height ?? 0;
   final int width;
   final int height;
   factory IntSize.round(Size s) => IntSize(s.width.round(), s.height.round());
@@ -21,7 +21,7 @@ class IntSize {
 
   @override
   int get hashCode {
-    int result = 17;
+    var result = 17;
 
     result = 31 * result + width.hashCode;
     result = 31 * result + height.hashCode;
@@ -59,7 +59,7 @@ class FunctionDef {
   }
 }
 
-typedef double MathFunc(double x);
+typedef MathFunc = double Function(double x);
 
 class CartesianPlane extends StatefulWidget {
   const CartesianPlane(
@@ -68,7 +68,7 @@ class CartesianPlane extends StatefulWidget {
       this.lineSize = 2,
       this.aspectRatio,
       this.defs})
-      : this.coords = coords ?? const Rect.fromLTRB(-1, 1, 1, -1);
+      : coords = coords ?? const Rect.fromLTRB(-1, 1, 1, -1);
   final Rect coords;
   final double currentX;
   final double aspectRatio;
@@ -94,19 +94,19 @@ class _CartesianPlaneState extends State<CartesianPlane> {
         listEquals<FunctionDef>(currentImage.item2, widget.defs) &&
         currentImage.item3 == currentSize) return;
 
-    final List<FunctionDef> defs = widget.defs;
-    final IntSize size = currentSize;
-    final Rect coords = widget.coords;
-    final int lineSize = widget.lineSize;
+    final defs = widget.defs;
+    final size = currentSize;
+    final coords = widget.coords;
+    final lineSize = widget.lineSize;
     // We will need to process the image now
-    final Tuple2<List<FunctionDef>, IntSize> processing = Tuple2(defs, size);
+    final processing = Tuple2<List<FunctionDef>, IntSize>(defs, size);
     currentProcessing = processing;
-    final Uint8List bytes = await getFutureImage(size, defs, coords, lineSize);
+    final bytes = await getFutureImage(size, defs, coords, lineSize);
 
     // Exit if a new image was scheduled
     if (processing != currentProcessing) return print('Early return 0');
 
-    final MemoryImage image = MemoryImage(bytes);
+    final image = MemoryImage(bytes);
     await precacheImage(image, context);
 
     // Exit if a new image was scheduled
@@ -125,11 +125,11 @@ class _CartesianPlaneState extends State<CartesianPlane> {
 
   static Iterable<Tuple2<int, Color>> getYs(
       double x, int yPixels, List<FunctionDef> defs, Rect coordinates) sync* {
-    for (int i = 0; i < defs.length; i++) {
-      final Color color = defs[i].color ?? Colors.black;
-      final MathFunc f = defs[i].func;
-      final double y = inverseLerp(coordinates.top, coordinates.bottom, f(x));
-      final int yPixel = (y * yPixels).round();
+    for (var i = 0; i < defs.length; i++) {
+      final color = defs[i].color ?? Colors.black;
+      final F = defs[i].func;
+      final y = inverseLerp(coordinates.top, coordinates.bottom, F(x));
+      final yPixel = (y * yPixels).round();
       yield Tuple2<int, Color>(yPixel, color);
     }
   }
@@ -142,18 +142,17 @@ class _CartesianPlaneState extends State<CartesianPlane> {
     // those to the image.
     // This is an flattened 2d array basically. Its more performant than an
     // array[sizePx.width] of arrays[defs.length].
-    final List<Tuple2<int, Color>> values =
-        List<Tuple2<int, Color>>(sizePx.width * defs.length);
+    final values = List<Tuple2<int, Color>>(sizePx.width * defs.length);
 
-    for (int x = 0; x < sizePx.width; x++) {
-      final List<Tuple2<int, Color>> yVals = getYs(
+    for (var x = 0; x < sizePx.width; x++) {
+      final yVals = getYs(
               lerpDouble(coordinates.left, coordinates.right, x / sizePx.width),
               sizePx.height,
               defs,
               coordinates)
           .toList();
 
-      for (int i = 0; i < yVals.length; i++) {
+      for (var i = 0; i < yVals.length; i++) {
         values[sizePx.width * i + x] = yVals[i];
       }
     }
@@ -166,7 +165,7 @@ class _CartesianPlaneState extends State<CartesianPlane> {
     // Now we convert the tuples into proper pixel data
     timer.reset();
     timer.start();
-    final Uint8List bytes = await runOnIsolate<Uint8List, PixelDataMessage>(
+    final bytes = await runOnIsolate<Uint8List, PixelDataMessage>(
             wrappedProcessImage,
             PixelDataMessage(
                 values: values,
@@ -180,13 +179,13 @@ class _CartesianPlaneState extends State<CartesianPlane> {
   }
 
   Iterable<Tuple3<Offset, Offset, Color>> getPoints(Size s) sync* {
-    for (int i = 0; i < widget.defs.length; i++) {
-      final MathFunc F = widget.defs[i].func;
-      final Color c = widget.defs[i].color;
-      final double xPos = inverseLerp(
+    for (var i = 0; i < widget.defs.length; i++) {
+      final F = widget.defs[i].func;
+      final c = widget.defs[i].color;
+      final xPos = inverseLerp(
               widget.coords.left, widget.coords.right, widget.currentX) *
           s.width;
-      final double yPos = inverseLerp(
+      final yPos = inverseLerp(
               widget.coords.top, widget.coords.bottom, F(widget.currentX)) *
           s.height;
       yield Tuple3(
@@ -195,24 +194,23 @@ class _CartesianPlaneState extends State<CartesianPlane> {
   }
 
   Iterable<Tuple3<Offset, double, Color>> getDerivatives(Size s) sync* {
-    for (int i = 0; i < widget.defs.length; i++) {
-      final MathFunc F = widget.defs[i].func;
-      final MathFunc D = widget.defs[i].deriv;
+    for (var i = 0; i < widget.defs.length; i++) {
+      final F = widget.defs[i].func;
+      final D = widget.defs[i].deriv;
       if (D == null) continue;
-      final Color c = widget.defs[i].color;
-      final double xPos = inverseLerp(
+      final c = widget.defs[i].color;
+      final xPos = inverseLerp(
               widget.coords.left, widget.coords.right, widget.currentX) *
           s.width;
-      final double yPos = inverseLerp(
+      final yPos = inverseLerp(
               widget.coords.top, widget.coords.bottom, F(widget.currentX)) *
           s.height;
       // The derivative works for an 1:1 cartesian plane, which isn't the case always
       // We need to scale it accordingly
-      final double xSize = s.width / widget.coords.width.abs();
-      final double ySize = s.height / widget.coords.height.abs();
-      final double d = D(widget.currentX);
-      final double scaledD = d * (ySize / xSize);
-      yield Tuple3(Offset(xPos, yPos), scaledD, c);
+      final xSize = s.width / widget.coords.width.abs();
+      final ySize = s.height / widget.coords.height.abs();
+      final d = D(widget.currentX) * (ySize / xSize);
+      yield Tuple3(Offset(xPos, yPos), d, c);
     }
   }
 
@@ -258,21 +256,21 @@ class _CartesianScalePaint extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    for (Tuple3<Offset, Offset, Color> point in points) {
+    for (var point in points) {
       canvas.drawCircle(point.item1, lineSize, Paint()..color = point.item3);
-      final TextPainter tp = TextPainter(
+      final tp = TextPainter(
           text: TextSpan(
               text:
                   '(x: ${point.item2.dx.toStringAsFixed(2)}, y: ${point.item2.dy.toStringAsFixed(2)})',
               style: textStyle),
           textDirection: TextDirection.ltr);
+
       tp.layout();
       tp.paint(canvas, point.item1);
     }
-    for (Tuple3<Offset, double, Color> point in derivatives) {
-      final double yStart = point.item1.dx * point.item2 + point.item1.dy;
-      final double yEnd =
-          point.item1.dy - (size.width - point.item1.dx) * point.item2;
+    for (var point in derivatives) {
+      final yStart = point.item1.dx * point.item2 + point.item1.dy;
+      final yEnd = point.item1.dy - (size.width - point.item1.dx) * point.item2;
       canvas.drawLine(
           Offset(0, yStart),
           Offset(size.width, yEnd),
