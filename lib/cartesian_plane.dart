@@ -62,6 +62,22 @@ class IntSize {
   factory IntSize.round(Size s) => IntSize(s.width.round(), s.height.round());
   factory IntSize.floor(Size s) => IntSize(s.width.floor(), s.height.floor());
   factory IntSize.ceil(Size s) => IntSize(s.width.ceil(), s.height.ceil());
+
+  @override
+  int get hashCode {
+    int result = 17;
+
+    result = 31 * result + width.hashCode;
+    result = 31 * result + height.hashCode;
+
+    return result;
+  }
+
+  @override
+  bool operator ==(other) {
+    if (other is IntSize) return width == other.width && height == other.height;
+    return false;
+  }
 }
 
 class _CartesianPlaneState extends State<CartesianPlane> {
