@@ -65,7 +65,9 @@ class IntSize {
 }
 
 class _CartesianPlaneState extends State<CartesianPlane> {
-  ImageProvider image;
+  Tuple2<List<FunctionDef>, IntSize> currentProcessing;
+  Tuple3<ImageProvider, List<FunctionDef>, IntSize> currentImage;
+  
   @override
   void didUpdateWidget(CartesianPlane oldWidget) {
     if (oldWidget.coordinates != widget.coordinates ||
@@ -89,47 +91,6 @@ class _CartesianPlaneState extends State<CartesianPlane> {
       final int yPixel = (y * yPixels).round();
       yield Tuple2<int, Color>(yPixel, color);
     }
-  }
-
-  Uint8List oldGetImage(IntSize sizePx) {
-    final Uint8List bytes = Uint8List(4 * sizePx.width * sizePx.height);
-    // Flutter expects an RGBA image
-    // We will make an List with all the x values as the idx and the y values and then we will add
-    // those to the image.
-    final timer = Stopwatch();
-    timer.start();
-    for (int x = 0; x < sizePx.width; x++) {
-      final List<Tuple2<int, Color>> yVals = getYs(
-              lerpDouble(widget.coordinates.left, widget.coordinates.right,
-                  x / sizePx.width),
-              sizePx.height)
-          .toList(growable: false);
-      for (int y = 0; y < sizePx.height; y++) {
-        //dev.debugger(when: x == 300);
-        final int i = (sizePx.width * y + x) * 4;
-        bytes[i] = 0x00;
-        bytes[i + 1] = 0x00;
-        bytes[i + 2] = 0x00;
-        bytes[i + 3] = 0x00;
-        // Faster than iterable. Even more when using an generator function.
-        for (int j = 0; j < yVals.length; j++) {
-          final Tuple2<int, Color> item = yVals[j];
-          final int dy = (item.item1 - y).abs();
-          if (dy <= widget.lineSize) {
-            final Color c = item.item2;
-            bytes[i] = c.red;
-            bytes[i + 1] = c.green;
-            bytes[i + 2] = c.blue;
-            bytes[i + 3] = (c.alpha * (1 - (dy / widget.lineSize))).round();
-          }
-        }
-      }
-    }
-    timer.stop();
-    print('Old algo finished: ${timer.elapsedMicroseconds / 1000}');
-    // Flutter does not let me instantiate an image from raw channel data smh
-    return img
-        .encodePng(img.Image.fromBytes(sizePx.width, sizePx.height, bytes));
   }
 
   Future<Uint8List> getFutureImage(IntSize sizePx) async {
@@ -173,53 +134,6 @@ class _CartesianPlaneState extends State<CartesianPlane> {
     print('computational gap was ${timer.elapsedMicroseconds}');
     // Flutter does not let me instantiate an image from raw channel data smh
     return bytes;
-  }
-
-  Uint8List getImage(IntSize sizePx) {
-    final Uint8List bytes = Uint8List.fromList(List<int>.filled(
-        4 * sizePx.width * sizePx.height, 0x00,
-        growable: false));
-    // Flutter expects an RGBA image
-    // We will make an List with all the x values as the idx and the y values and then we will add
-    // those to the image.
-    // This is an flattened 2d array basically. Its more performant
-    final List<Tuple2<int, Color>> values =
-        List<Tuple2<int, Color>>(sizePx.width * widget.defs.length);
-    final timer = Stopwatch();
-    timer.start();
-    for (int x = 0; x < sizePx.width; x++) {
-      final Iterable<Tuple2<int, Color>> yVals = getYs(
-          lerpDouble(widget.coordinates.left, widget.coordinates.right,
-              x / sizePx.width),
-          sizePx.height);
-      int i = 0;
-      for (Tuple2<int, Color> val in yVals) {
-        values[sizePx.width * i + x] = val;
-        i++;
-      }
-    }
-    print('New algo calculated: ${timer.elapsedMicroseconds / 1000}');
-    final int singlePxAlpha = (255 * 1 / widget.lineSize).floor();
-    // Now we convert the tuples into proper pixel data
-    for (int i = 0; i < values.length; i++) {
-      final int x = i % sizePx.width;
-      final int y = values[i].item1;
-      final Color c = values[i].item2;
-      for (int j = 0; j <= widget.lineSize; j++) {
-        final int yOffset = j.isEven ? -(j / 2).ceil() : (j / 2).ceil();
-        final int ny = yOffset + y;
-        if (ny >= sizePx.height || ny < 0) continue;
-        final int byteIdx = (ny * sizePx.width + x) * 4;
-        bytes[byteIdx] = c.red;
-        bytes[byteIdx + 1] = c.green;
-        bytes[byteIdx + 2] = c.blue;
-        bytes[byteIdx + 3] = singlePxAlpha * (widget.lineSize - j);
-      }
-    }
-    timer.stop();
-    print('New algo finished: ${timer.elapsedMicroseconds / 1000}');
-    return img
-        .encodePng(img.Image.fromBytes(sizePx.width, sizePx.height, bytes));
   }
 
   Iterable<Tuple3<Offset, Offset, Color>> getPoints(Size s) sync* {
