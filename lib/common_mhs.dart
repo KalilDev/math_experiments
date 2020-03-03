@@ -19,6 +19,7 @@ abstract class CommonMHSState extends State<CommonMHSWidget>
     assert(period != null);
     if (period == this.period && simSpeed == this.simSpeed) return;
     final t = _controller?.value ?? 0;
+    final wasAnimating = _controller?.isAnimating ?? true;
     if (_controller != null) _controller.dispose();
     _controller = AnimationController(
         vsync: this,
@@ -26,7 +27,9 @@ abstract class CommonMHSState extends State<CommonMHSWidget>
             Duration(milliseconds: (period * (1 / simSpeed) * 1000).floor()),
         upperBound: 2.0);
     _controller.value = t;
-    _controller.repeat();
+    if (wasAnimating) {
+      _controller.repeat();
+    }
     this.period = period;
   }
 
@@ -62,16 +65,24 @@ abstract class CommonMHSState extends State<CommonMHSWidget>
               defs: defs,
               currentX: _controller.value,
               aspectRatio: 2,
-              lineSize: 4),
+              lineSize: 3),
         ),
-        RaisedButton(
-          onPressed: () => _controller.stop(),
-          child: Text('Pause'),
-        ),
-        RaisedButton(
-          onPressed: () => _controller.repeat(),
-          child: Text('Resume'),
-        )
+        if (_controller.isAnimating)
+          RaisedButton(
+            onPressed: () {
+              _controller.stop();
+              setState(() => null);
+            },
+            child: Text('Pause'),
+          ),
+        if (!_controller.isAnimating)
+          RaisedButton(
+            onPressed: () {
+              _controller.repeat();
+              setState(() => null);
+            },
+            child: Text('Resume'),
+          )
       ],
     );
   }
