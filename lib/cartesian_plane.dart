@@ -3,10 +3,11 @@ import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:math_experiments/cartesian_isolate/cartesian_isolate.dart';
+import 'package:math_experiments/cartesian_isolate/message.dart';
+import 'package:math_experiments/cartesian_isolate/min_color.dart';
 import 'package:math_experiments/work_funcs.dart';
 import 'package:tuple/tuple.dart';
-import 'cartesian_isolate.dart';
-import 'isolate_wrapper.dart';
 
 @immutable
 class IntSize {
@@ -38,9 +39,12 @@ class IntSize {
 
 @immutable
 class FunctionDef {
-  const FunctionDef({this.func, this.deriv, this.color, this.hash});
+  const FunctionDef(
+      {this.func, this.deriv, this.color, this.hash, this.describe, this.name});
   final MathFunc func;
   final MathFunc deriv;
+  final PointDescriber describe;
+  final String name;
   final Color color;
   final int hash;
 
@@ -49,17 +53,19 @@ class FunctionDef {
 
   @override
   bool operator ==(other) {
-    if (other.runtimeType != runtimeType) return false;
-
-    if (hash != null && (other as FunctionDef).hash != null) {
-      return hash == (other as FunctionDef).hash;
+    if (other is FunctionDef) {
+      if (hash != null && other.hash != null) {
+        return hash == other.hash;
+      }
+      return identical(this, other);
     }
 
-    return super == (other);
+    return false;
   }
 }
 
 typedef MathFunc = double Function(double x);
+typedef PointDescriber = String Function(double x, double y);
 
 class CartesianPlane extends StatefulWidget {
   const CartesianPlane(
@@ -165,31 +171,33 @@ class _CartesianPlaneState extends State<CartesianPlane> {
     // Now we convert the tuples into proper pixel data
     timer.reset();
     timer.start();
-    final bytes = await runOnIsolate<Uint8List, PixelDataMessage>(
-            wrappedProcessImage,
-            PixelDataMessage(
-                values: values,
-                width: sizePx.width,
-                height: sizePx.height,
-                lineSize: lineSize))
+    final bytes = futureProcessImage(PixelDataMessage(
+            values: values,
+            width: sizePx.width,
+            height: sizePx.height,
+            lineSize: lineSize))
         .catchError((e) => print(e));
     print('computational gap was ${timer.elapsedMicroseconds}');
     // Flutter does not let me instantiate an image from raw channel data smh
     return bytes;
   }
 
-  Iterable<Tuple3<Offset, Offset, Color>> getPoints(Size s) sync* {
+  static String defaultDescription(double x, double y) =>
+      '(x: ${x.toStringAsFixed(2)}, y: ${y.toStringAsFixed(2)})';
+
+  Iterable<Tuple3<Offset, String, Color>> getPoints(Size s) sync* {
     for (var i = 0; i < widget.defs.length; i++) {
       final F = widget.defs[i].func;
       final c = widget.defs[i].color;
+      final describe = widget.defs[i].describe ?? defaultDescription;
+      final y = F(widget.currentX);
       final xPos = inverseLerp(
               widget.coords.left, widget.coords.right, widget.currentX) *
           s.width;
-      final yPos = inverseLerp(
-              widget.coords.top, widget.coords.bottom, F(widget.currentX)) *
-          s.height;
-      yield Tuple3(
-          Offset(xPos, yPos), Offset(widget.currentX, F(widget.currentX)), c);
+      final yPos =
+          inverseLerp(widget.coords.top, widget.coords.bottom, y) * s.height;
+      final description = describe(widget.currentX, y);
+      yield Tuple3(Offset(xPos, yPos), description, c);
     }
   }
 
@@ -214,6 +222,19 @@ class _CartesianPlaneState extends State<CartesianPlane> {
     }
   }
 
+  Iterable<Tuple3<Offset, String, Color>> getNames(Size s) sync* {
+    for (var i = 0; i < widget.defs.length; i++) {
+      final F = widget.defs[i].func;
+      final name = widget.defs[i].name;
+      if (name == null) continue;
+      final c = widget.defs[i].color;
+      final yPos = inverseLerp(
+              widget.coords.top, widget.coords.bottom, F(widget.coords.left)) *
+          s.height;
+      yield Tuple3(Offset(0, yPos), name, c);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
@@ -231,12 +252,19 @@ class _CartesianPlaneState extends State<CartesianPlane> {
                     painter: _CartesianScalePaint(
                         points: getPoints(constraints.biggest),
                         derivatives: getDerivatives(constraints.biggest),
+                        names: getNames(constraints.biggest),
                         lineSize: widget.lineSize * 1.0,
                         textStyle: DefaultTextStyle.of(context).style),
                     size: constraints.biggest,
                   ),
                 ),
-              if (currentImage != null) Image(image: currentImage.item1)
+              if (currentImage != null)
+                Image(
+                  fit: BoxFit.fill,
+                  image: currentImage.item1,
+                  width: constraints.biggest.width,
+                  height: constraints.biggest.height,
+                )
             ],
           );
         }));
@@ -245,9 +273,14 @@ class _CartesianPlaneState extends State<CartesianPlane> {
 
 class _CartesianScalePaint extends CustomPainter {
   _CartesianScalePaint(
-      {this.points, this.derivatives, this.lineSize, this.textStyle});
-  final Iterable<Tuple3<Offset, Offset, Color>> points;
+      {this.points,
+      this.derivatives,
+      this.names,
+      this.lineSize,
+      this.textStyle});
+  final Iterable<Tuple3<Offset, String, Color>> points;
   final Iterable<Tuple3<Offset, double, Color>> derivatives;
+  final Iterable<Tuple3<Offset, String, Color>> names;
   final double lineSize;
   final TextStyle textStyle;
 
@@ -256,18 +289,21 @@ class _CartesianScalePaint extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    for (var point in points) {
-      canvas.drawCircle(point.item1, lineSize, Paint()..color = point.item3);
+    void drawText(Offset start, String text, [Color color]) {
       final tp = TextPainter(
           text: TextSpan(
-              text:
-                  '(x: ${point.item2.dx.toStringAsFixed(2)}, y: ${point.item2.dy.toStringAsFixed(2)})',
-              style: textStyle),
+              text: text,
+              style:
+                  color != null ? textStyle.copyWith(color: color) : textStyle),
           textDirection: TextDirection.ltr);
 
       tp.layout();
-      tp.paint(canvas, point.item1);
+      final dy =
+          (start.dy + tp.height).clamp(tp.height, size.height) - tp.height;
+      final dx = (start.dx + tp.width).clamp(tp.width, size.width) - tp.width;
+      tp.paint(canvas, Offset(dx, dy));
     }
+
     for (var point in derivatives) {
       final yStart = point.item1.dx * point.item2 + point.item1.dy;
       final yEnd = point.item1.dy - (size.width - point.item1.dx) * point.item2;
@@ -278,6 +314,13 @@ class _CartesianScalePaint extends CustomPainter {
             ..style = PaintingStyle.stroke
             ..strokeWidth = lineSize / 2
             ..color = point.item3);
+    }
+    for (var point in points) {
+      canvas.drawCircle(point.item1, lineSize, Paint()..color = point.item3);
+      drawText(point.item1, point.item2);
+    }
+    for (var point in names) {
+      drawText(point.item1, point.item2, point.item3);
     }
   }
 }
