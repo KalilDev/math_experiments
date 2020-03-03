@@ -111,19 +111,24 @@ class _SpringPageState extends CommonMHSState {
       FunctionDef(
           func: (double x) => elasticEnergy(
               consts.K, distanceAtT(x, maxDistance(consts.Em, consts.K))),
-          deriv: (double x) => sin(2 * pi * x) * -consts.Em * pi,
+          //deriv: (double x) => sin(2 * pi * x) * -consts.Em * pi,
           color: theme.forceColor,
-          hash: runtimeType.hashCode + 1),
+          hash: runtimeType.hashCode + 1,
+          name: 'Energia Elastica',
+          describe: (x, y) => 'We: ${y.toStringAsFixed(1)}J'),
       FunctionDef(
           func: (double x) => kineticEnergy(
               consts.M, velAtT(x, maxVelocity(consts.Em, consts.M))),
-          deriv: (double x) => sin(2 * pi * x) * consts.Em * pi,
+          //deriv: (double x) => sin(2 * pi * x) * consts.Em * pi,
           color: theme.velocityColor,
-          hash: runtimeType.hashCode + 2),
+          hash: runtimeType.hashCode + 2,
+          name: 'Energia Cinética',
+          describe: (x, y) => 'Wc: ${y.toStringAsFixed(1)}J'),
       FunctionDef(
           func: (double x) => consts.Em,
           color: theme.mechanicalColor,
-          hash: runtimeType.hashCode + 3),
+          hash: runtimeType.hashCode + 3,
+          describe: (x, y) => 't: ${(x * period / 2).toStringAsFixed(1)}s'),
     ];
   }
 }
