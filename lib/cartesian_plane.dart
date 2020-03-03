@@ -129,14 +129,14 @@ class _CartesianPlaneState extends State<CartesianPlane> {
     });
   }
 
-  static Iterable<Tuple2<int, Color>> getYs(
+  static Iterable<Tuple2<int, MinColor>> getYs(
       double x, int yPixels, List<FunctionDef> defs, Rect coordinates) sync* {
     for (var i = 0; i < defs.length; i++) {
-      final color = defs[i].color ?? Colors.black;
+      final color = MinColor(defs[i].color.value ?? Colors.black.value);
       final F = defs[i].func;
       final y = inverseLerp(coordinates.top, coordinates.bottom, F(x));
       final yPixel = (y * yPixels).round();
-      yield Tuple2<int, Color>(yPixel, color);
+      yield Tuple2<int, MinColor>(yPixel, color);
     }
   }
 
@@ -148,7 +148,7 @@ class _CartesianPlaneState extends State<CartesianPlane> {
     // those to the image.
     // This is an flattened 2d array basically. Its more performant than an
     // array[sizePx.width] of arrays[defs.length].
-    final values = List<Tuple2<int, Color>>(sizePx.width * defs.length);
+    final values = List<Tuple2<int, MinColor>>(sizePx.width * defs.length);
 
     for (var x = 0; x < sizePx.width; x++) {
       final yVals = getYs(
