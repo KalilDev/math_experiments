@@ -19,7 +19,7 @@ class Home extends StatelessWidget {
       themeMode: Provider.of<ConstantsProvider>(context).theme,
       darkTheme: ThemeData.dark(),
       home: DefaultTabController(
-        length: 1, //2,
+        length: 2,
         child: Scaffold(
           appBar: AppBar(
             title: Text('Movimento Harmônico Simples'),
@@ -33,15 +33,13 @@ class Home extends StatelessWidget {
               Tab(
                 text: 'Mola',
               ),
-              /*Tab(
-                text: "Pêndulo: TODO",
-              )*/
+              Tab(
+                text: 'Pêndulo: TODO',
+              )
             ]),
           ),
           body: TabBarView(
-            children: <Widget>[
-              SpringPage(), /*PendulumPage()*/
-            ],
+            children: <Widget>[SpringPage(), PendulumPage()],
           ),
         ),
       ),
