@@ -85,18 +85,52 @@ class PendulumPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final start = Offset(size.width / 2, 0);
     void drawPendulum() {
-      final l = size.width / 2;
-      final center = size.center(Offset.zero);
-      final point = Offset(sin(theta) * l + l, cos(theta) * l + l);
+      final l = 3 * size.height / 4;
+      final point =
+          Offset(start.dx + sin(theta) * l, start.dy + cos(theta) * l);
 
       final linePaint = Paint()..color = Colors.black;
-      canvas.drawLine(center, point, linePaint);
+      canvas.drawLine(start, point, linePaint);
 
       final pointPaint = Paint()..color = Colors.blue;
       canvas.drawCircle(point, 4.0, pointPaint);
     }
 
+    void drawTheta() {
+      final angleSize = 80.0;
+      final startAngle = Offset(start.dx, start.dy + angleSize);
+      final finishAngle = Offset(
+          start.dx + sin(theta) * angleSize, start.dy + cos(theta) * angleSize);
+      final delta = finishAngle - startAngle;
+      final path = Path();
+      final controlPoint = Offset(
+          startAngle.dx + delta.dx / 2 + angleSize / 10 * sin(theta),
+          startAngle.dy + delta.dy / 2 + angleSize / 10 * cos(theta));
+      path
+        ..moveTo(start.dx, start.dy)
+        ..lineTo(startAngle.dx, startAngle.dy)
+        ..quadraticBezierTo(
+            controlPoint.dx, controlPoint.dy, finishAngle.dx, finishAngle.dy)
+        ..lineTo(start.dx, start.dy);
+      canvas.drawPath(
+          path,
+          Paint()
+            ..color = Colors.blue
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.0);
+      final tp = TextPainter(
+          text: TextSpan(
+              text: 'θ\n${(theta * 180 / pi).round()}°',
+              style: TextStyle(color: Colors.black)),
+          textDirection: TextDirection.ltr,
+          textAlign: TextAlign.center);
+      tp.layout();
+      tp.paint(canvas, controlPoint.translate(-tp.width / 2, 0));
+    }
+
     drawPendulum();
+    drawTheta();
   }
 }

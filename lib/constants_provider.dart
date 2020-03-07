@@ -8,6 +8,7 @@ class ConstantsProvider extends ChangeNotifier {
   double _simSpeed = 0.25;
   double _gravity = 9.807;
   double _length = 1;
+  double _theta0 = 0.34;
   ThemeMode _theme = ThemeMode.system;
 
   double get K => _dampeningConstant;
@@ -16,6 +17,7 @@ class ConstantsProvider extends ChangeNotifier {
   double get speed => _simSpeed;
   double get g => _gravity;
   double get l => _length;
+  double get theta0 => _theta0;
   ThemeMode get theme => _theme;
 
   set K(double d) {
