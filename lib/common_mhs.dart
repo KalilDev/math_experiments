@@ -42,6 +42,7 @@ abstract class CommonMHSState extends State<CommonMHSWidget>
   double getPeriod(ConstantsProvider consts);
   void updateFunctions(ConstantsProvider consts, Brightness b);
   Widget buildRepresentation(ConstantsProvider consts, Brightness b, double t);
+  Rect getCoords(ConstantsProvider consts);
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +62,7 @@ abstract class CommonMHSState extends State<CommonMHSWidget>
         AnimatedBuilder(
           animation: _controller,
           builder: (BuildContext c, _) => CartesianPlane(
-              coords: Rect.fromLTRB(0, consts.Em * 1.01, 2, -consts.Em * 0.01),
+              coords: getCoords(consts),
               defs: defs,
               currentX: _controller.value,
               aspectRatio: 2,

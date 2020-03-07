@@ -48,6 +48,10 @@ class SpringPage extends CommonMHSWidget {
 
 class _SpringPageState extends CommonMHSState {
   @override
+  Rect getCoords(ConstantsProvider consts) =>
+      Rect.fromLTRB(0, consts.Em * 1.01, 2, -consts.Em * 0.01);
+
+  @override
   Widget buildRepresentation(ConstantsProvider consts, Brightness b, double t) {
     double getSpringFFraction() {
       final xMax = maxDistance(consts.Em, consts.K);

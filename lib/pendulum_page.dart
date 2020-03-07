@@ -61,6 +61,17 @@ class _PendulumPageState extends CommonMHSState {
           color: Colors.red),
     ];
   }
+
+  @override
+  Rect getCoords(ConstantsProvider consts) => Rect.fromLTRB(
+      0.0,
+      gravitationalEnergy(
+              consts.M, consts.g, heightAtTheta(consts.theta0, consts.l)) *
+          1.01,
+      2.0,
+      gravitationalEnergy(
+              consts.M, consts.g, heightAtTheta(consts.theta0, consts.l)) *
+          -0.01);
 }
 
 class PendulumPainter extends CustomPainter {
