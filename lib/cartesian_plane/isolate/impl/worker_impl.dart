@@ -11,21 +11,20 @@ import '../message.dart';
 Map<String, dynamic> encodePixelData(PixelDataMessage msg) {
   print('encoded');
   return {
-    'vals': msg.values.map((e) => [e.item1, e.item2.value]).toList(),
+    'vals': msg.values,
     'lineSize': msg.lineSize,
     'width': msg.width,
-    'height': msg.height
+    'height': msg.height,
+    'colors': msg.colors
   };
 }
 
 PixelDataMessage decodePixelData(Map<dynamic, dynamic> msg) => PixelDataMessage(
-    values: msg['vals']
-        .map<Tuple2<int, MinColor>>(
-            (e) => Tuple2<int, MinColor>(e[0] as int, MinColor(e[1])))
-        .toList(),
+    values: Uint16List.fromList((msg['vals'] as List).cast<int>()),
     lineSize: msg['lineSize'] as int,
     width: msg['width'] as int,
-    height: msg['height'] as int);
+    height: msg['height'] as int,
+    colors: Uint32List.fromList((msg['colors'] as List).cast<int>()));
 
 void main() {
   // This is ran only on the worker!

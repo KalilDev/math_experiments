@@ -9,14 +9,18 @@ class MinColor {
   ///
   /// A value of 0 means this color is fully transparent. A value of 255 means
   /// this color is fully opaque.
-  int get alpha => (0xff000000 & value) >> 24;
+  static alphaVal(int value) => (0xff000000 & value) >> 24;
+  int get alpha => alphaVal(value);
 
   /// The red channel of this color in an 8 bit value.
-  int get red => (0x00ff0000 & value) >> 16;
+  static redVal(int value) => (0x00ff0000 & value) >> 16;
+  int get red => redVal(value);
 
   /// The green channel of this color in an 8 bit value.
-  int get green => (0x0000ff00 & value) >> 8;
+  static greenVal(int value) => (0x0000ff00 & value) >> 8;
+  int get green => greenVal(value);
 
   /// The blue channel of this color in an 8 bit value.
-  int get blue => (0x000000ff & value) >> 0;
+  static blueVal(int value) => (0x000000ff & value) >> 0;
+  int get blue => blueVal(value);
 }

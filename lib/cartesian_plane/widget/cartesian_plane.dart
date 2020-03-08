@@ -1,62 +1,63 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'dart:ui';
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:math_experiments/cartesian_plane/isolate/impl/stub_impl.dart';
+import 'package:math_experiments/cartesian_plane/isolate/process_image.dart';
 import '../cartesian_isolate.dart';
 import '../cartesian_utils.dart';
 import 'package:math_experiments/work_funcs.dart';
 import 'package:tuple/tuple.dart';
 
 @visibleForTesting
-Iterable<Tuple2<int, MinColor>> getYs(
-    double x, int yPixels, List<FunctionDef> defs, Rect coordinates) sync* {
-  for (var i = 0; i < defs.length; i++) {
-    final color = MinColor(defs[i].color.value ?? Colors.black.value);
-    final F = defs[i].func;
-    final debug = F(x);
-    final y = inverseLerp(coordinates.top, coordinates.bottom, F(x));
-    final yPixel = (y * yPixels).round();
-    yield Tuple2<int, MinColor>(yPixel, color);
-  }
-}
-
-@visibleForTesting
 Future<Uint8List> getFutureImage(
     IntSize sizePx, List<FunctionDef> defs, Rect coordinates, int lineSize,
     {Future<Uint8List> Function(PixelDataMessage msg) imageConverter}) async {
+  final timer = Stopwatch()..start();
   // Use the isolate/worker implementation by default
   imageConverter ??= futureProcessImage;
 // We will make an List with all the x values as the idx and the y values and then we will add
 // those to the image.
 // This is an flattened 2d array basically. Its more performant than an
 // array[sizePx.width] of arrays[defs.length].
-  final values = List<Tuple2<int, MinColor>>(sizePx.width * defs.length);
+  final values = Uint16List(sizePx.width * defs.length);
+
+  final xPx =
+      ui.lerpDouble(coordinates.left, coordinates.right, 1 / sizePx.width) -
+          coordinates.left;
+  final yPx =
+      ui.lerpDouble(coordinates.top, coordinates.bottom, 1 / sizePx.height) -
+          coordinates.top;
 
   for (var x = 0; x < sizePx.width; x++) {
-    final yVals = getYs(
-            lerpDouble(coordinates.left, coordinates.right, x / sizePx.width),
-            sizePx.height,
-            defs,
-            coordinates)
-        .toList();
-
-    for (var i = 0; i < yVals.length; i++) {
-      values[sizePx.width * i + x] = yVals[i];
+    for (var i = 0; i < defs.length; i++) {
+      final F = defs[i].func;
+      final xValue = coordinates.left + x * xPx;
+      final yValue = F(xValue);
+      final yPixel = ((yValue - coordinates.top) / yPx).round();
+      values[sizePx.width * i + x] = yPixel & 0xffff;
     }
   }
+  timer.stop();
+  print('Calculating every Y took ${timer.elapsedMicroseconds}');
 
 // Let there be an async gap, this will avoid dropping frames.
   await Future.value(null);
 
-// Now we convert the tuples into an actual image.
+  timer.reset();
+  final colors = defs.map<int>((e) => e.color.value).toList(growable: false);
+// Now we convert the Ys into an actual image.
+  timer.start();
   final bytes = imageConverter(PixelDataMessage(
-          values: values,
-          width: sizePx.width,
-          height: sizePx.height,
-          lineSize: lineSize))
-      .catchError((e) => print(e));
-// Flutter does not let me instantiate an image from raw channel data smh
+      values: values,
+      width: sizePx.width,
+      height: sizePx.height,
+      lineSize: lineSize,
+      colors: Uint32List.fromList(colors)));
+  timer.stop();
+  print('Creating the image took ${timer.elapsedMicroseconds}');
+
   return bytes;
 }
 
@@ -82,9 +83,24 @@ class CartesianPlane extends StatefulWidget {
   _CartesianPlaneState createState() => _CartesianPlaneState();
 }
 
+Future<ui.Image> futurizedDecodeImagePixels(
+    Uint8List bytes, int width, int height, ui.PixelFormat format) {
+  final completer = Completer<ui.Image>();
+  void callback(ui.Image result) {
+    completer.complete(result);
+  }
+
+  try {
+    ui.decodeImageFromPixels(bytes, width, height, format, callback);
+  } catch (e) {
+    completer.completeError(e);
+  }
+  return completer.future;
+}
+
 class _CartesianPlaneState extends State<CartesianPlane> {
   Tuple2<List<FunctionDef>, IntSize> currentProcessing;
-  Tuple3<ImageProvider, List<FunctionDef>, IntSize> currentImage;
+  Tuple3<ui.Image, List<FunctionDef>, IntSize> currentImage;
   IntSize currentSize;
 
   Future<void> maybeUpdateImage() async {
@@ -104,24 +120,36 @@ class _CartesianPlaneState extends State<CartesianPlane> {
     // We will need to process the image now
     final processing = Tuple2<List<FunctionDef>, IntSize>(defs, size);
     currentProcessing = processing;
-    final bytes = await getFutureImage(size, defs, coords, lineSize * 4);
+    final bytes = await getFutureImage(size, defs, coords, lineSize * 4,
+        imageConverter: processImageImpl);
 
     // Exit if a new image was scheduled
     if (processing != currentProcessing) return;
 
-    final image = MemoryImage(bytes);
-    await precacheImage(image, context);
+    final image = await futurizedDecodeImagePixels(
+        bytes, size.width, size.height, ui.PixelFormat.rgba8888);
 
     // Exit if a new image was scheduled
     if (processing != currentProcessing) {
-      return image.evict();
+      return image.dispose();
     }
 
     // Finally we update the widget
     setState(() {
       currentProcessing = null;
+      if (currentImage != null) {
+        currentImage.item1.dispose();
+      }
       currentImage = Tuple3(image, widget.defs, currentSize);
     });
+  }
+
+  @override
+  void dispose() {
+    if (currentImage != null) {
+      currentImage.item1.dispose();
+    }
+    super.dispose();
   }
 
   Iterable<Tuple3<Offset, String, Color>> getPoints(Size s) sync* {
@@ -198,15 +226,34 @@ class _CartesianPlaneState extends State<CartesianPlane> {
                   ),
                 ),
               if (currentImage != null)
-                Image(
-                  fit: BoxFit.fill,
-                  image: currentImage.item1,
-                  width: constraints.biggest.width,
-                  height: constraints.biggest.height,
+                CustomPaint(
+                  painter: UiImagePainter(currentImage.item1),
+                  size: constraints.biggest,
                 )
             ],
           );
         }));
+  }
+}
+
+class UiImagePainter extends CustomPainter {
+  UiImagePainter(this.image);
+  final ui.Image image;
+  @override
+  void paint(ui.Canvas canvas, ui.Size size) {
+    canvas.drawImageRect(
+        image,
+        Rect.fromLTRB(0, 0, image.width * 1.0, image.height * 1.0),
+        Rect.fromPoints(Offset.zero, size.bottomRight(Offset.zero)),
+        Paint());
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    if (oldDelegate is UiImagePainter) {
+      return oldDelegate.image == image;
+    }
+    return false;
   }
 }
 
