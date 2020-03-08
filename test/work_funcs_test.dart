@@ -6,18 +6,30 @@ import 'package:test/test.dart';
 const double _kErrorMargin = 0.000001;
 
 class DoubleMatcher extends Matcher {
-  DoubleMatcher(this.n);
+  const DoubleMatcher(this.n, [double epsilon])
+      : epsilon = epsilon ?? _kErrorMargin;
   final double n;
+  final double epsilon;
+
+  @override
+  Description describeMismatch(
+      item, Description mismatchDescription, Map matchState, bool verbose) {
+    final delta = matchState['delta'] as double;
+    return mismatchDescription
+      ..add(
+          'The delta would be acceptable if it were =<$epsilon, but it is $delta.');
+  }
 
   @override
   Description describe(Description description) {
-    return StringDescription('uhhh fuck');
+    return description..add('≈$n');
   }
 
   @override
   bool matches(item, Map matchState) {
     if (item is double) {
       final diff = (n - item).abs();
+      matchState['delta'] = diff;
       final didMatch = diff <= _kErrorMargin;
       return didMatch;
     }
