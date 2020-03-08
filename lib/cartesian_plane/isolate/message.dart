@@ -1,4 +1,4 @@
-import 'package:math_experiments/cartesian_isolate/min_color.dart';
+import '../cartesian_utils.dart';
 import 'package:meta/meta.dart';
 import 'package:tuple/tuple.dart';
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'cartesian_plane.dart';
+import 'cartesian_plane/cartesian_utils.dart';
+import 'cartesian_plane/cartesian_widget.dart';
 import 'constants_provider.dart';
 import 'package:provider/provider.dart';
 

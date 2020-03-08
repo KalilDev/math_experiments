@@ -4,7 +4,7 @@ import 'package:math_experiments/pendulum_funcs.dart';
 
 import 'constants_provider.dart';
 import 'package:flutter/material.dart';
-import 'cartesian_plane.dart';
+import 'cartesian_plane/cartesian_utils.dart';
 
 class PendulumPage extends CommonMHSWidget {
   @override

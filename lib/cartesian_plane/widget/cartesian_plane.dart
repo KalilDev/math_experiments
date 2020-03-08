@@ -3,69 +3,10 @@ import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:math_experiments/cartesian_isolate/cartesian_isolate.dart';
-import 'package:math_experiments/cartesian_isolate/message.dart';
-import 'package:math_experiments/cartesian_isolate/min_color.dart';
+import '../cartesian_isolate.dart';
+import '../cartesian_utils.dart';
 import 'package:math_experiments/work_funcs.dart';
 import 'package:tuple/tuple.dart';
-
-@immutable
-class IntSize {
-  const IntSize(int width, int height)
-      : width = width ?? 0,
-        height = height ?? 0;
-  final int width;
-  final int height;
-  factory IntSize.round(Size s) => IntSize(s.width.round(), s.height.round());
-  factory IntSize.floor(Size s) => IntSize(s.width.floor(), s.height.floor());
-  factory IntSize.ceil(Size s) => IntSize(s.width.ceil(), s.height.ceil());
-
-  @override
-  int get hashCode {
-    var result = 17;
-
-    result = 31 * result + width.hashCode;
-    result = 31 * result + height.hashCode;
-
-    return result;
-  }
-
-  @override
-  bool operator ==(other) {
-    if (other is IntSize) return width == other.width && height == other.height;
-    return false;
-  }
-}
-
-@immutable
-class FunctionDef {
-  const FunctionDef(
-      {this.func, this.deriv, this.color, this.hash, this.describe, this.name});
-  final MathFunc func;
-  final MathFunc deriv;
-  final PointDescriber describe;
-  final String name;
-  final Color color;
-  final int hash;
-
-  @override
-  int get hashCode => hash ?? super.hashCode;
-
-  @override
-  bool operator ==(other) {
-    if (other is FunctionDef) {
-      if (hash != null && other.hash != null) {
-        return hash == other.hash;
-      }
-      return identical(this, other);
-    }
-
-    return false;
-  }
-}
-
-typedef MathFunc = double Function(double x);
-typedef PointDescriber = String Function(double x, double y);
 
 class CartesianPlane extends StatefulWidget {
   const CartesianPlane(
@@ -107,7 +48,7 @@ class _CartesianPlaneState extends State<CartesianPlane> {
     // We will need to process the image now
     final processing = Tuple2<List<FunctionDef>, IntSize>(defs, size);
     currentProcessing = processing;
-    final bytes = await getFutureImage(size, defs, coords, lineSize);
+    final bytes = await getFutureImage(size, defs, coords, lineSize * 4);
 
     // Exit if a new image was scheduled
     if (processing != currentProcessing) return print('Early return 0');
@@ -242,7 +183,7 @@ class _CartesianPlaneState extends State<CartesianPlane> {
             widget.coords.width.abs() / widget.coords.height.abs(),
         child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
-          currentSize = IntSize.ceil(constraints.biggest);
+          currentSize = IntSize.ceil(constraints.biggest * 4);
           maybeUpdateImage();
           return Stack(
             children: <Widget>[

@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:html';
 import 'dart:typed_data';
 
-import 'package:math_experiments/cartesian_isolate/min_color.dart';
+import '../../cartesian_utils.dart';
 import 'package:tuple/tuple.dart';
 
-import 'process_image.dart';
-import 'message.dart';
+import '../process_image.dart';
+import '../message.dart';
 
 Map<String, dynamic> encodePixelData(PixelDataMessage msg) {
   print('encoded');

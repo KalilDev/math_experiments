@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'package:math_experiments/cartesian_plane.dart';
+import 'cartesian_plane/cartesian_utils.dart';
 import 'package:math_experiments/common_mhs.dart';
 
 import 'constants_provider.dart';
