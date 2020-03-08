@@ -61,7 +61,7 @@ extension on num {
 void main() {
   test('Benchmark', () async {
     final numberOfTries = 10;
-    double function(double x) => x;
+    double function(double x) => 1;
     final coords = Rect.fromLTRB(-1, 2, 1, 0);
     final def = [FunctionDef(func: function, color: Colors.amber)];
     final size = IntSize(1000, 1000);
@@ -73,7 +73,7 @@ void main() {
         ..reset()
         ..start();
       await getFutureImage(size, def, coords, 4,
-          imageConverter: (PixelDataMessage a) => Future.value(null));
+          imageConverter: stub.processImageImpl);
       timer.stop();
       timeTaken[i] = timer.elapsedMicroseconds;
     }
