@@ -7,9 +7,9 @@ import 'impl/stub_impl.dart' as stub;
 // ignore: uri_does_not_exist
 import 'impl/stub_impl.dart'
     // ignore: uri_does_not_exist
-    if (dart.library.io) 'isolate_impl.dart'
+    if (dart.library.io) 'impl/isolate_impl.dart'
     // ignore: uri_does_not_exist
-    if (dart.library.html) 'worker_impl.dart';
+    if (dart.library.html) 'impl/worker_impl.dart';
 
 final bool _useStub = kIsWeb && kDebugMode;
 

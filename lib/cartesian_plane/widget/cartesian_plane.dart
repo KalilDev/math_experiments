@@ -8,6 +8,62 @@ import '../cartesian_utils.dart';
 import 'package:math_experiments/work_funcs.dart';
 import 'package:tuple/tuple.dart';
 
+@visibleForTesting
+Iterable<Tuple2<int, MinColor>> getYs(
+    double x, int yPixels, List<FunctionDef> defs, Rect coordinates) sync* {
+  for (var i = 0; i < defs.length; i++) {
+    final color = MinColor(defs[i].color.value ?? Colors.black.value);
+    final F = defs[i].func;
+    final debug = F(x);
+    final y = inverseLerp(coordinates.top, coordinates.bottom, F(x));
+    final yPixel = (y * yPixels).round();
+    yield Tuple2<int, MinColor>(yPixel, color);
+  }
+}
+
+@visibleForTesting
+Future<Uint8List> getFutureImage(
+    IntSize sizePx, List<FunctionDef> defs, Rect coordinates, int lineSize,
+    {Future<Uint8List> Function(PixelDataMessage msg) imageConverter}) async {
+  // Use the isolate/worker implementation by default
+  imageConverter ??= futureProcessImage;
+// We will make an List with all the x values as the idx and the y values and then we will add
+// those to the image.
+// This is an flattened 2d array basically. Its more performant than an
+// array[sizePx.width] of arrays[defs.length].
+  final values = List<Tuple2<int, MinColor>>(sizePx.width * defs.length);
+
+  for (var x = 0; x < sizePx.width; x++) {
+    final yVals = getYs(
+            lerpDouble(coordinates.left, coordinates.right, x / sizePx.width),
+            sizePx.height,
+            defs,
+            coordinates)
+        .toList();
+
+    for (var i = 0; i < yVals.length; i++) {
+      values[sizePx.width * i + x] = yVals[i];
+    }
+  }
+
+// Let there be an async gap, this will avoid dropping frames.
+  await Future.value(null);
+
+// Now we convert the tuples into an actual image.
+  final bytes = imageConverter(PixelDataMessage(
+          values: values,
+          width: sizePx.width,
+          height: sizePx.height,
+          lineSize: lineSize))
+      .catchError((e) => print(e));
+// Flutter does not let me instantiate an image from raw channel data smh
+  return bytes;
+}
+
+@visibleForTesting
+String defaultDescription(double x, double y) =>
+    '(x: ${x.toStringAsFixed(2)}, y: ${y.toStringAsFixed(2)})';
+
 class CartesianPlane extends StatefulWidget {
   const CartesianPlane(
       {Rect coords,
@@ -67,55 +123,6 @@ class _CartesianPlaneState extends State<CartesianPlane> {
       currentImage = Tuple3(image, widget.defs, currentSize);
     });
   }
-
-  static Iterable<Tuple2<int, MinColor>> getYs(
-      double x, int yPixels, List<FunctionDef> defs, Rect coordinates) sync* {
-    for (var i = 0; i < defs.length; i++) {
-      final color = MinColor(defs[i].color.value ?? Colors.black.value);
-      final F = defs[i].func;
-      final y = inverseLerp(coordinates.top, coordinates.bottom, F(x));
-      final yPixel = (y * yPixels).round();
-      yield Tuple2<int, MinColor>(yPixel, color);
-    }
-  }
-
-  static Future<Uint8List> getFutureImage(IntSize sizePx,
-      List<FunctionDef> defs, Rect coordinates, int lineSize) async {
-    // We will make an List with all the x values as the idx and the y values and then we will add
-    // those to the image.
-    // This is an flattened 2d array basically. Its more performant than an
-    // array[sizePx.width] of arrays[defs.length].
-    final values = List<Tuple2<int, MinColor>>(sizePx.width * defs.length);
-
-    for (var x = 0; x < sizePx.width; x++) {
-      final yVals = getYs(
-              lerpDouble(coordinates.left, coordinates.right, x / sizePx.width),
-              sizePx.height,
-              defs,
-              coordinates)
-          .toList();
-
-      for (var i = 0; i < yVals.length; i++) {
-        values[sizePx.width * i + x] = yVals[i];
-      }
-    }
-
-    // Let there be an async gap, this will avoid dropping frames.
-    await Future.value(null);
-
-    // Now we convert the tuples into an actual image.
-    final bytes = futureProcessImage(PixelDataMessage(
-            values: values,
-            width: sizePx.width,
-            height: sizePx.height,
-            lineSize: lineSize))
-        .catchError((e) => print(e));
-    // Flutter does not let me instantiate an image from raw channel data smh
-    return bytes;
-  }
-
-  static String defaultDescription(double x, double y) =>
-      '(x: ${x.toStringAsFixed(2)}, y: ${y.toStringAsFixed(2)})';
 
   Iterable<Tuple3<Offset, String, Color>> getPoints(Size s) sync* {
     for (var i = 0; i < widget.defs.length; i++) {
