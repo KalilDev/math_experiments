@@ -51,20 +51,18 @@ class _CartesianPlaneState extends State<CartesianPlane> {
     final bytes = await getFutureImage(size, defs, coords, lineSize * 4);
 
     // Exit if a new image was scheduled
-    if (processing != currentProcessing) return print('Early return 0');
+    if (processing != currentProcessing) return;
 
     final image = MemoryImage(bytes);
     await precacheImage(image, context);
 
     // Exit if a new image was scheduled
     if (processing != currentProcessing) {
-      print('Early return 1');
       return image.evict();
     }
 
     // Finally we update the widget
     setState(() {
-      print('Setting state: $processing');
       currentProcessing = null;
       currentImage = Tuple3(image, widget.defs, currentSize);
     });
@@ -83,8 +81,6 @@ class _CartesianPlaneState extends State<CartesianPlane> {
 
   static Future<Uint8List> getFutureImage(IntSize sizePx,
       List<FunctionDef> defs, Rect coordinates, int lineSize) async {
-    final timer = Stopwatch();
-    timer.start();
     // We will make an List with all the x values as the idx and the y values and then we will add
     // those to the image.
     // This is an flattened 2d array basically. Its more performant than an
@@ -103,22 +99,17 @@ class _CartesianPlaneState extends State<CartesianPlane> {
         values[sizePx.width * i + x] = yVals[i];
       }
     }
-    print('calcs took ${timer.elapsedMicroseconds}');
-    timer.reset();
-    timer.start();
-    // Let there be an async gap. This will prevent dropped
+
+    // Let there be an async gap, this will avoid dropping frames.
     await Future.value(null);
-    print('gap was ${timer.elapsedMicroseconds}');
-    // Now we convert the tuples into proper pixel data
-    timer.reset();
-    timer.start();
+
+    // Now we convert the tuples into an actual image.
     final bytes = futureProcessImage(PixelDataMessage(
             values: values,
             width: sizePx.width,
             height: sizePx.height,
             lineSize: lineSize))
         .catchError((e) => print(e));
-    print('computational gap was ${timer.elapsedMicroseconds}');
     // Flutter does not let me instantiate an image from raw channel data smh
     return bytes;
   }

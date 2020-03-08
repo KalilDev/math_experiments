@@ -1,4 +1,4 @@
-import '../cartesian_utils.dart';
+import '../cartesian_utils.dart' show MinColor;
 import 'package:meta/meta.dart';
 import 'package:tuple/tuple.dart';
 

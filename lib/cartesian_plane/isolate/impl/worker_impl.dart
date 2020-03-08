@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:html';
 import 'dart:typed_data';
 
-import '../../cartesian_utils.dart';
+import '../../cartesian_utils.dart' show MinColor;
 import 'package:tuple/tuple.dart';
 
 import '../process_image.dart';
