@@ -27,10 +27,34 @@ Uint8List processImage(PixelDataMessage data) {
       for (var py = 0; py < data.lineSize; py++) {
         // Least Significant Bit
         final lsb = py & 0x1;
-        // When py is odd, pyOffset will be negative and we will divide py + 1 by two
-        // When py is even, pyOffset will be positive and we will divide only py by two
-        final pyOffset = (-1 * lsb) * ((py + lsb) >> 0x1);
+        // Table of truth:
+        // lsb  | out
+        //  0x0 |  1
+        //  0x1 | -1
+        final signBit = -1 * lsb + (~lsb & 0x1);
+        // Multiply by the sign and divide by two.
+        // py + lsb is there so 0 does not appear twice.
+        // Table of truth:
+        //  py     |  (py + lsb) >> 0x1 | int | lsb | signBit
+        //  0x0000 | 0x0000             | 0   | 0x0 |  1
+        //  0x0001 | 0x0001             | 1   | 0x1 | -1
+        //  0x0010 | 0x0001             | 1   | 0x0 |  1
+        //  0x0011 | 0x0010             | 2   | 0x1 | -1
+        //  0x0100 | 0x0010             | 2   | 0x0 |  1
+        //  0x0101 | 0x0011             | 3   | 0x1 | -1
+        //  0x0110 | 0x0011             | 3   | 0x0 |  1
+        //  0x0111 | 0x0100             | 4   | 0x1 | -1
+        //  0x1000 | 0x0100             | 4   | 0x0 |  1
+        //  0x1001 | 0x0101             | 5   | 0x1 | -1
+        //  0x1010 | 0x0101             | 5   | 0x0 |  1
+        //  0x1011 | 0x0110             | 6   | 0x1 | -1
+        //  0x1100 | 0x0110             | 6   | 0x0 |  1
+        //  0x1101 | 0x0111             | 7   | 0x1 | -1
+        //  0x1110 | 0x0111             | 7   | 0x0 |  1
+        //  0x1111 | 0x1000             | 8   | 0x1 | -1
+        final pyOffset = signBit * ((py + lsb) >> 0x1);
         final byteIdx = initialByteIdx + pyOffset * sizeOfRow;
+        if (byteIdx < 0 || byteIdx + 3 >= byteCount) continue;
         // Ok, now that we have the byte index we will set the color.
         bytes[byteIdx] = MinColor.redVal(c);
         bytes[byteIdx + 1] = MinColor.greenVal(c);
