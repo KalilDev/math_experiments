@@ -11,7 +11,8 @@ import 'impl/stub_impl.dart'
     // ignore: uri_does_not_exist
     if (dart.library.html) 'impl/worker_impl.dart';
 
-final bool _useStub = kIsWeb && kDebugMode;
+// Processing the image on debug is quite slow, so use an isolate.
+final bool _useParallel = !kIsWeb && kDebugMode;
 
 final Future<Uint8List> Function(PixelDataMessage message) futureProcessImage =
-    _useStub ? stub.processImageImpl : processImageImpl;
+    _useParallel ? processImageImpl : stub.processImageImpl;

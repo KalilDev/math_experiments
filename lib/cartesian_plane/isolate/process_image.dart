@@ -3,12 +3,13 @@ import 'package:math_experiments/cartesian_plane/cartesian_utils.dart'
     show MinColor;
 
 import 'message.dart';
-import 'package:image/image.dart' as img;
+import 'impl_array.dart';
 
 Uint8List processImage(PixelDataMessage data) {
   final byteCount = 4 * data.width * data.height;
   final timer = Stopwatch()..start();
-  final bytes = Uint8List(byteCount);
+  //final bytes = Uint8List(byteCount);
+  final bytes = createUint8List(byteCount);
   timer.stop();
   print('Creating uint8list took ${timer.elapsedMicroseconds}');
 
