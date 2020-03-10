@@ -13,48 +13,78 @@ import 'package:tuple/tuple.dart';
 @visibleForTesting
 Future<Uint8List> getFutureImage(
     IntSize sizePx, List<FunctionDef> defs, Rect coordinates, int lineSize,
-    {Future<Uint8List> Function(PixelDataMessage msg) imageConverter}) async {
+    {FutureOr<Uint8List> Function(PixelDataMessage msg) imageConverter}) async {
   final timer = Stopwatch()..start();
+  final valAllocTimer = Stopwatch();
   // Use the isolate/worker implementation by default
   imageConverter ??= futureProcessImage;
 // We will make an List with all the x values as the idx and the y values and then we will add
 // those to the image.
 // This is an flattened 2d array basically. Its more performant than an
 // array[sizePx.width] of arrays[defs.length].
-  final values = Uint16List(sizePx.width * defs.length);
+  final width = sizePx.width & 0xffff;
+  final height = sizePx.height & 0xffff;
+  valAllocTimer.start();
+  final values = Uint16List(width * defs.length);
+  valAllocTimer.stop();
+  print('took ${valAllocTimer.elapsedMicroseconds}us to alloc vals');
 
-  final xPx =
-      ui.lerpDouble(coordinates.left, coordinates.right, 1 / sizePx.width) -
-          coordinates.left;
-  final yPx =
-      ui.lerpDouble(coordinates.top, coordinates.bottom, 1 / sizePx.height) -
-          coordinates.top;
+  // This was benchmarked on my Moto G5:
+  // Lerp inside the loop:
+  //     Average: 5415
+  //     Median: 5770
+  //     Max-Min Delta: 4501
+  //     Times: [6556, 5728, 8277, 5812, 6182, 5878, 3861, 3849, 4231, 3776]
+  // Lerp outside the loop (here):
+  //     Average: 4691
+  //     Median: 4396
+  //     Max-Min Delta: 3817
+  //     Times: [5670, 5212, 6937, 4295, 4498, 6864, 3948, 3120, 3130, 3245]
+  final xPx = ui.lerpDouble(coordinates.left, coordinates.right, 1 / width) -
+      coordinates.left;
+  final yPx = ui.lerpDouble(coordinates.top, coordinates.bottom, 1 / height) -
+      coordinates.top;
 
-  for (var x = 0; x < sizePx.width; x++) {
+  var xValue = coordinates.left;
+  for (var x = 0; x < width; x++) {
+    var arrayIndex = x;
     for (var i = 0; i < defs.length; i++) {
       final F = defs[i].func;
-      final xValue = coordinates.left + x * xPx;
       final yValue = F(xValue);
-      final yPixel = ((yValue - coordinates.top) / yPx).round();
-      values[sizePx.width * i + x] = yPixel & 0xffff;
+      // Reason: It simply isn't true (At least in this case)
+      // Benchmark with ~/:
+      //     Average: 8161
+      //     Median: 8100
+      //     Max-Min Delta: 6158
+      // Benchmark with toInt():
+      //     Average: 1371
+      //     Median: 1344
+      //     Max-Min Delta: 4320
+      // ignore: division_optimization
+      final yPixel = ((yValue - coordinates.top) / yPx).toInt();
+      values[arrayIndex] = yPixel;
+      arrayIndex += width;
     }
+    xValue += xPx;
   }
   timer.stop();
   print('Calculating every Y took ${timer.elapsedMicroseconds}');
+  //print('Calculating every func took ${functionTimer.elapsedMicroseconds}');
 
 // Let there be an async gap, this will avoid dropping frames.
   await Future.value(null);
 
   timer.reset();
-  final colors = defs.map<int>((e) => e.color.value).toList(growable: false);
+  final colors = Uint32List.fromList(
+      defs.map<int>((e) => e.color.value).toList(growable: false));
 // Now we convert the Ys into an actual image.
   timer.start();
   final bytes = imageConverter(PixelDataMessage(
       values: values,
-      width: sizePx.width,
-      height: sizePx.height,
+      width: width,
+      height: height,
       lineSize: lineSize,
-      colors: Uint32List.fromList(colors)));
+      colors: colors));
   timer.stop();
   print('Creating the image took ${timer.elapsedMicroseconds}');
 
