@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'cartesian_plane/cartesian_utils.dart';
-import 'cartesian_plane/cartesian_widget.dart';
+import 'package:flutter_cartesian_plane/cartesian_utils.dart';
+import 'package:flutter_cartesian_plane/cartesian_widget.dart';
 import 'constants_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -11,7 +11,7 @@ abstract class CommonMHSWidget extends StatefulWidget {
 
 abstract class CommonMHSState extends State<CommonMHSWidget>
     with TickerProviderStateMixin {
-  AnimationController _controller;
+  AnimationController controller;
   double period;
   double simSpeed;
   List<FunctionDef> defs;
@@ -19,24 +19,28 @@ abstract class CommonMHSState extends State<CommonMHSWidget>
   void startController(double period, double simSpeed) {
     assert(period != null);
     if (period == this.period && simSpeed == this.simSpeed) return;
-    final t = _controller?.value ?? 0;
-    final wasAnimating = _controller?.isAnimating ?? true;
-    if (_controller != null) _controller.dispose();
-    _controller = AnimationController(
+    final t = controller?.value ?? 0;
+    final wasAnimating = controller?.isAnimating ?? true;
+    if (controller != null) controller.dispose();
+    controller = AnimationController(
         vsync: this,
         duration:
             Duration(milliseconds: (period * (1 / simSpeed) * 1000).floor()),
         upperBound: 2.0);
-    _controller.value = t;
+    controller.value = t;
     if (wasAnimating) {
-      _controller.repeat();
+      controller.repeat();
     }
     this.period = period;
+    /*controller.addListener(() {
+      updateFunctions(Provider.of<ConstantsProvider>(context, listen: false),
+          Theme.of(context).brightness);
+    });*/
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    controller.dispose();
     super.dispose();
   }
 
@@ -57,30 +61,30 @@ abstract class CommonMHSState extends State<CommonMHSWidget>
           textAlign: TextAlign.center,
         ),
         AnimatedBuilder(
-            animation: _controller,
+            animation: controller,
             builder: (BuildContext context, _) => buildRepresentation(
-                consts, Theme.of(context).brightness, _controller.value)),
+                consts, Theme.of(context).brightness, controller.value)),
         AnimatedBuilder(
-          animation: _controller,
+          animation: controller,
           builder: (BuildContext c, _) => CartesianPlane(
               coords: getCoords(consts),
               defs: defs,
-              currentX: _controller.value,
+              currentX: controller.value,
               aspectRatio: 2,
               lineSize: 3),
         ),
-        if (_controller.isAnimating)
+        if (controller.isAnimating)
           RaisedButton(
             onPressed: () {
-              _controller.stop();
+              controller.stop();
               setState(() => null);
             },
             child: Text('Pause'),
           ),
-        if (!_controller.isAnimating)
+        if (!controller.isAnimating)
           RaisedButton(
             onPressed: () {
-              _controller.repeat();
+              controller.repeat();
               setState(() => null);
             },
             child: Text('Resume'),

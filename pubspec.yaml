@@ -26,6 +26,9 @@ dependencies:
   image:
   provider:
   tuple:
+  ffi:
+  flutter_cartesian_plane:
+    path: ../flutter_cartesian_plane
 
 dev_dependencies:
   flutter_test:

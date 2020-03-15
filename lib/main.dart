@@ -8,6 +8,7 @@ import 'pendulum_page.dart';
 
 void main() {
   debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia;
+  //runApp(Benchmark());
   runApp(ChangeNotifierProvider(
       create: (BuildContext context) => ConstantsProvider(), child: Home()));
 }

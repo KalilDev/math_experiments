@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'cartesian_plane/cartesian_utils.dart';
+import 'package:flutter_cartesian_plane/cartesian_utils.dart';
 import 'package:math_experiments/common_mhs.dart';
 
 import 'constants_provider.dart';
@@ -117,7 +117,9 @@ class _SpringPageState extends CommonMHSState {
               consts.K, distanceAtT(x, maxDistance(consts.Em, consts.K))),
           //deriv: (double x) => sin(2 * pi * x) * -consts.Em * pi,
           color: theme.forceColor,
-          hash: runtimeType.hashCode + 1,
+          hash: runtimeType.hashCode +
+              1 +
+              ((this.controller.value / 2) * 16).floor(),
           name: 'Energia Elastica',
           describe: (x, y) => 'We: ${y.toStringAsFixed(1)}J'),
       FunctionDef(
